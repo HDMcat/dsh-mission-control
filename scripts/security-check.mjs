@@ -98,6 +98,10 @@ async function inspectCompact() {
   const probe = await request(base, '/api/open-full', { headers: { Origin: 'http://127.0.0.1:9999' } });
   assert.equal(probe.status, 200);
 
+  const appOrigin = await request(base, '/api/snapshot', { headers: { Origin: 'dsh-app://dsh' } });
+  assert.equal(appOrigin.status, 200, 'DSH custom scheme must be allowed');
+  assert.equal(appOrigin.headers['access-control-allow-origin'], 'dsh-app://dsh');
+
   const badProbe = await request(base, '/api/open-full', { headers: { Origin: 'http://evil.example' } });
   assert.equal(badProbe.status, 403);
 

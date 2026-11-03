@@ -8,9 +8,15 @@ export function setSecurityHeaders(res) {
   res.setHeader('X-Frame-Options', 'DENY');
 }
 
+export function isDshAppOrigin(value) {
+  return /^dsh-app:\/\//i.test(String(value || ''));
+}
+
 export function normalizeOrigin(value) {
+  const raw = String(value || '').trim();
+  if (isDshAppOrigin(raw)) return raw.replace(/\/$/, '');
   try {
-    const u = new URL(String(value || ''));
+    const u = new URL(raw);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
     return `${u.protocol}//${u.host}`;
   } catch {
@@ -30,6 +36,7 @@ export function allowedOriginSet(origins) {
 export function originAllowed(req, allowed) {
   const origin = req.headers.origin;
   if (!origin) return true; // same-origin browser requests may omit Origin; Host is still checked.
+  if (isDshAppOrigin(origin)) return true;
   return allowed.has(normalizeOrigin(origin));
 }
 
@@ -43,7 +50,8 @@ export function setCorsForAllowedOrigin(req, res, allowed) {
   const origin = req.headers.origin;
   if (!origin) return false;
   const normalized = normalizeOrigin(origin);
-  if (!allowed.has(normalized)) return false;
+  const customApp = isDshAppOrigin(origin);
+  if (!customApp && !allowed.has(normalized)) return false;
   res.setHeader('Access-Control-Allow-Origin', normalized);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

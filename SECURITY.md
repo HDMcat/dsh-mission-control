@@ -12,8 +12,8 @@ The loopback interface is **not** treated as sufficient authentication by itself
   issued when the HUD page is loaded. All `/api/*` routes except `/api/health`
   require it.
 - **7799 compact collector**: cross-origin reads are allowlisted to the exact
-  DSH Web origin (`DSH_WEB_URL` / `MC_ALLOWED_ORIGINS`). There is no wildcard
-  CORS.
+  DSH Web origin (`DSH_WEB_URL` / `MC_ALLOWED_ORIGINS`) and the DSH desktop
+  `dsh-app://` scheme. There is no wildcard CORS.
 - Both servers reject non-loopback `Host` headers (DNS rebinding) and attach
   `X-Content-Type-Options`, `Referrer-Policy`, and `X-Frame-Options` headers.
 - Mutating full-HUD routes require the HUD cookie, POST, and a same-origin

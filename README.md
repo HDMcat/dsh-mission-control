@@ -191,8 +191,9 @@ audit.
   page is loaded. All APIs except `/api/health` require it; mutations also require
   POST + same-origin `Origin`.
 - **7799 compact panel** allows cross-origin reads only from the exact DSH Web
-  origin (`DSH_WEB_URL`, or `MC_ALLOWED_ORIGINS`). There is no wildcard CORS.
-  A missing DSH origin fails closed; configure the allowlist explicitly.
+  origin (`DSH_WEB_URL`, or `MC_ALLOWED_ORIGINS`) and the DSH desktop
+  `dsh-app://` scheme. There is no wildcard CORS. A missing DSH origin fails
+  closed; configure the allowlist explicitly.
 - Both servers reject non-loopback `Host` headers to reduce DNS-rebinding risk.
 - `/api/open-file`, `/api/open-folder`, `/api/select`, `/api/settings`, and
   `/api/proc/kill` are same-site, same-origin operations.
