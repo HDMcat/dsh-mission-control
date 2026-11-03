@@ -5,12 +5,9 @@ uploaded** by the agent.
 
 ## Must fill before publishing
 
-- [ ] Replace `YOUR NAME` in `package.json` and `LICENSE` with the owner's public
-  identity / copyright holder.
-- [ ] Add the real repository URL/homepage to `package.json` and README badges or
-  links.
-- [ ] Fill the copyright holder in `LICENSE` and the `author` field in
-  `package.json` (currently placeholders).
+- [x] Public identity `HDMcat` is set in `LICENSE` and `package.json`.
+- [x] Repository homepage/bugs URLs are set to the public GitHub repository.
+- [x] Copyright holder and package author are set to `HDMcat`.
 - [x] Redistribution permission for `icon.png` / `cat.png` / `demo/public/cat.png`
   is recorded in `NOTICE` (owner-confirmed).
 - [ ] Follow [`GITHUB-NOREPLY.md`](GITHUB-NOREPLY.md) to create a GitHub noreply

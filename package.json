@@ -4,7 +4,7 @@
   "description": "Privacy-first local Mission Control for DeepSeek Harness: full HUD, workflow timeline, filesystem radar, TRACE, 21 themes, and a one-click full-screen launcher. Loopback only.",
   "type": "module",
   "license": "MIT",
-  "author": "YOUR NAME",
+  "author": "HDMcat",
   "keywords": [
     "dsh",
     "deepseek-harness",
@@ -64,5 +64,13 @@
     "smoke": "node scripts/smoke-host.mjs",
     "smoke:client": "node scripts/smoke-client.mjs",
     "test": "npm run check && npm run manifest && npm run smoke && npm run smoke:client"
+  },
+  "homepage": "https://github.com/HDMcat/dsh-mission-control",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HDMcat/dsh-mission-control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HDMcat/dsh-mission-control/issues"
   }
 }
