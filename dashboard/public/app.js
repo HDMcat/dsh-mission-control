@@ -1258,10 +1258,10 @@
       const stateOverride = dd.pct > 92 ? ['LOW', C.cinnabar]
         : readBps > 0 ? ['READ', readPct > 75 ? C.cinnabar : C.blue2]
         : ['IDLE', C.ink4];
-      updateHwRow(key, 'NVMe SSD · ' + drive, readPct, `${readTxt} · ${fmtBytes(dd.free)} free`,
+      updateHwRow(key, 'NVMe SSD · ' + drive, readPct, `${readTxt} / ${maxTxt}`,
         'N/A', 'N/A', stateOverride);
       hwRefs[key].pct.title = `实时读取 ${readTxt} / 观测 MAX ${maxTxt}`;
-      hwRefs[key].val.title = `已用 ${dd.pct}% · 可用 ${fmtBytes(dd.free)} / 总 ${fmtBytes(dd.total)} · 读取 ${readTxt}`;
+      hwRefs[key].val.title = `已用 ${dd.pct}% · 可用 ${fmtBytes(dd.free)} / 总 ${fmtBytes(dd.total)} · 读取 ${readTxt} / MAX ${maxTxt}`;
       hwRefs[key].temp.title = '本机磁盘未暴露温度传感器（StorageReliabilityCounter 不可访问）';
       hwRefs[key].power.title = '本机磁盘未暴露功率传感器';
       if (drive === 'E:') {
