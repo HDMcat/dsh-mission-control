@@ -8,7 +8,7 @@ files and cover are release assets, not repository blobs.
 
 - Resolution: 2560 × 1600, 30 fps, H.264 + AAC stereo.
 - Runtime: 60.0 s.
-- No voiceover. Information is carried by burned ASS subtitles (plus SRT/ASS).
+- No voiceover. Information is carried by subtitles. Two cuts are provided: a hard-sub version and a clean version with external SRT/ASS so viewers can toggle captions on Bilibili.
 - Song: “I Really Want to Stay at Your House”, excerpt 30.046–90.046 s,
   user-provided local file. **No license is claimed; copyright remains with the
   rights holders. Bilibili may flag/mute/block it.**
