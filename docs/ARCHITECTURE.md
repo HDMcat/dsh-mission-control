@@ -47,9 +47,7 @@ It also avoids a same-origin rewrite of the original standalone dashboard.
 
 A full DSH Host↔Client Remote requires generated protocol bindings. For this
 open-source cut, loopback HTTP keeps both surfaces dependency-free and reviewable.
-The trade-off is fixed ports and a browser CORS allowance. A later version can
-replace the transport with a Host Remote while the collectors and HUD stay
-unchanged.
+The trade-off is fixed ports and a narrow browser CORS allowlist. The full HUD uses a same-site cookie; the compact API only echoes the configured DSH Web origin. A later version can replace the transport with a Host Remote.
 
 ## Theme contract
 

@@ -20,6 +20,10 @@ import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  allowedOriginSet, cookieValue, isLoopbackHost, mutationOriginAllowed,
+  randomToken, safeEqualString, setHudCookie, setSecurityHeaders,
+} from '../src/http-security.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATE_DIR = process.env.MC_STATE_DIR || __dirname;
@@ -33,7 +37,11 @@ const PORT = Number(process.env.MC_FULL_PORT || 7800);
 const HOST = '127.0.0.1';
 const DASH_VERSION = '3.0';
 const READONLY = process.env.MC_READONLY === '1' || process.env.MC_ALLOW_PROC !== '1';
-const CONTROL_TOKEN = crypto.randomBytes(18).toString('hex');
+const HUD_TOKEN = randomToken(32);
+const HUD_ORIGINS = allowedOriginSet([
+  `http://127.0.0.1:${PORT}`,
+  `http://localhost:${PORT}`,
+]);
 const ALLOWED_PROCS = new Set(['python', 'pythonw', 'node', 'pwsh', 'powershell']);
 const HOME = os.homedir();
 const DSH = process.env.DSH_HOME || path.join(HOME, '.dsh');
@@ -1264,7 +1272,6 @@ function buildState() {
     session: session.summary(),
     sessions: session.list(),
     pinned: session.pinned || null,
-    controlToken: CONTROL_TOKEN,
     readonly: READONLY,
     workspace: radar.snapshot(),
   };
@@ -1278,14 +1285,21 @@ function refreshState() {
 const clients = new Set();
 
 async function balanceSnapshot() {
-  const url = process.env.MC_BALANCE_URL
-    || (process.env.DEEPSEEK_API_KEY ? 'https://api.deepseek.com/user/balance' : '');
-  const key = process.env.MC_BALANCE_KEY || process.env.DEEPSEEK_API_KEY || '';
+  const url = String(process.env.MC_BALANCE_URL || '').trim();
+  const key = process.env.MC_BALANCE_KEY
+    || (process.env.MC_BALANCE_USE_DSH_KEY === '1' ? process.env.DEEPSEEK_API_KEY : '');
   if (!url) {
     return {
       ok: false,
       code: 'not_configured',
-      message: '余额接口未配置：设置 MC_BALANCE_URL / MC_BALANCE_KEY 或 DEEPSEEK_API_KEY',
+      message: '余额接口未配置：显式设置 MC_BALANCE_URL / MC_BALANCE_KEY 才会出站',
+    };
+  }
+  if (!/^https:\/\//i.test(url) && process.env.MC_ALLOW_INSECURE_BALANCE !== '1') {
+    return {
+      ok: false,
+      code: 'insecure_url',
+      message: '余额接口必须是 https；本地测试需显式 MC_ALLOW_INSECURE_BALANCE=1',
     };
   }
   try {
@@ -1416,6 +1430,32 @@ function sendJson(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
+function hudAuthed(req) {
+  return safeEqualString(cookieValue(req, 'mc_hud'), HUD_TOKEN);
+}
+
+function requireHudRead(req, res) {
+  if (hudAuthed(req)) return true;
+  sendJson(res, 401, { ok: false, error: 'hud authentication required' });
+  return false;
+}
+
+function requireHudMutation(req, res) {
+  if (!hudAuthed(req)) {
+    sendJson(res, 401, { ok: false, error: 'hud authentication required' });
+    return false;
+  }
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { ok: false, error: 'POST only' });
+    return false;
+  }
+  if (!mutationOriginAllowed(req, HUD_ORIGINS)) {
+    sendJson(res, 403, { ok: false, error: 'same-origin required' });
+    return false;
+  }
+  return true;
+}
+
 function folderTarget(rel) {
   const safeRel = String(rel || '').replace(/^[/\\]+/, '');
   const target = path.resolve(ROOT, safeRel);
@@ -1502,14 +1542,8 @@ function execP(cmd, args, opts) {
 const killTimes = [];
 async function handleProcKill(req, res) {
   if (READONLY) return sendJson(res, 403, { ok: false, error: 'dashboard is read-only (MC_READONLY=1)' });
-  const origin = req.headers.origin || '';
-  if (origin && !new RegExp('^http://(127\\.0\\.0\\.1|localhost):' + PORT + '$').test(origin)) {
-    return sendJson(res, 403, { ok: false, error: 'origin not allowed' });
-  }
   let body;
   try { body = await readBody(req); } catch { return sendJson(res, 400, { ok: false, error: 'invalid body' }); }
-  const token = req.headers['x-control-token'] || body.token;
-  if (token !== CONTROL_TOKEN) return sendJson(res, 403, { ok: false, error: 'bad token' });
 
   const pid = Number(body.pid);
   if (!Number.isInteger(pid) || pid < 8) return sendJson(res, 400, { ok: false, error: 'invalid pid' });
@@ -1553,14 +1587,8 @@ async function handleProcKill(req, res) {
 }
 
 async function handleSettings(req, res) {
-  const origin = req.headers.origin || '';
-  if (origin && !new RegExp('^http://(127\\.0\\.0\\.1|localhost):' + PORT + '$').test(origin)) {
-    return sendJson(res, 403, { ok: false, error: 'origin not allowed' });
-  }
   let body;
   try { body = await readBody(req); } catch { return sendJson(res, 400, { ok: false, error: 'invalid body' }); }
-  const token = req.headers['x-control-token'] || body.token;
-  if (token !== CONTROL_TOKEN) return sendJson(res, 403, { ok: false, error: 'bad token' });
 
   const requested = String(body.root || '').trim();
   if (!requested || requested.length > 500) return sendJson(res, 400, { ok: false, error: 'invalid root' });
@@ -1583,11 +1611,15 @@ async function handleSettings(req, res) {
 
 
 const server = http.createServer(async (req, res) => {
+  setSecurityHeaders(res);
+  if (!isLoopbackHost(req.headers.host, PORT)) {
+    return sendJson(res, 403, { ok: false, error: 'host not allowed' });
+  }
   const url = new URL(req.url, `http://${req.headers.host || HOST}`);
   const p = url.pathname;
 
   if (p === '/api/proc/kill') {
-    if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' });
+    if (!requireHudMutation(req, res)) return;
     return handleProcKill(req, res);
   }
   if (p === '/api/health') {
@@ -1600,7 +1632,9 @@ const server = http.createServer(async (req, res) => {
       uptime_s: Math.round((Date.now() - T0) / 1000),
     });
   }
+  if (p.startsWith('/api/') && !requireHudRead(req, res)) return;
   if (p === '/api/balance') {
+    if (req.method !== 'GET') return sendJson(res, 405, { ok: false, error: 'GET only' });
     const data = await balanceSnapshot();
     return sendJson(res, data.ok ? 200 : 200, data);
   }
@@ -1617,7 +1651,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, await listProjectFolders(rel));
   }
   if (p === '/api/open-folder') {
-    if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' });
+    if (!requireHudMutation(req, res)) return;
     let body;
     try { body = await readBody(req); } catch { return sendJson(res, 400, { ok: false, error: 'invalid body' }); }
     const target = folderTarget(body.path || '');
@@ -1626,7 +1660,7 @@ const server = http.createServer(async (req, res) => {
     catch (error) { return sendJson(res, 500, { ok: false, error: String(error?.message || error) }); }
   }
   if (p === '/api/open-file') {
-    if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' });
+    if (!requireHudMutation(req, res)) return;
     let body;
     try { body = await readBody(req); } catch { return sendJson(res, 400, { ok: false, error: 'invalid body' }); }
     const target = folderTarget(body.path || '');
@@ -1645,7 +1679,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
   if (p === '/api/settings') {
-    if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' });
+    if (!requireHudMutation(req, res)) return;
     return handleSettings(req, res);
   }
   if (p === '/api/module/status') {
@@ -1658,11 +1692,13 @@ const server = http.createServer(async (req, res) => {
     return res.end(stateJson);
   }
   if (p === '/api/select') {
-    const id = url.searchParams.get('id');
+    if (!requireHudMutation(req, res)) return;
+    let body;
+    try { body = await readBody(req); } catch { return sendJson(res, 400, { ok: false, error: 'invalid body' }); }
+    const id = String(body.id || '').trim();
     session.setPinned(!id || id === 'auto' ? null : id);
     refreshState();
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ ok: true, pinned: session.pinned }));
+    return sendJson(res, 200, { ok: true, pinned: session.pinned });
   }
   if (p === '/api/stream') {
     res.writeHead(200, {
@@ -1670,7 +1706,6 @@ const server = http.createServer(async (req, res) => {
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
-      'Access-Control-Allow-Origin': '*',
     });
     res.write('retry: 2000\n\n');
     refreshState();
@@ -1689,6 +1724,7 @@ const server = http.createServer(async (req, res) => {
   rel = path.normalize(rel).replace(/^(\.\.[/\\])+/, '');
   const file = path.join(__dirname, 'public', rel);
   if (!file.startsWith(path.join(__dirname, 'public'))) { res.writeHead(403); return res.end('forbidden'); }
+  if (p === '/' || p === '/index.html') setHudCookie(res, HUD_TOKEN);
   try {
     const data = await fsp.readFile(file);
     const ext = path.extname(file).toLowerCase();

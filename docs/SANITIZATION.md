@@ -10,7 +10,7 @@ not.
 |---|---|---|
 | Absolute paths | A hardcoded project root on a drive and private cache paths | Compact: configurable root, relative feed paths. Full HUD: configurable root; session cwd is reduced to a basename |
 | User identity | Home directories and a machine-specific desktop shortcut | No home paths, no shortcut, no username |
-| Session data | Private static copies of sessions | Compact payload has none. The full HUD reads local DSH projections at runtime and renders them locally; nothing is sent off the machine |
+| Session data | Private static copies of sessions | Compact payload has none. The full HUD reads local DSH projections at runtime and renders them locally; no session text is sent off the machine unless an explicit balance URL is configured |
 | Process control | Always-on allowlisted termination API | Present in the full HUD but **off by default**; requires `allowProcessControl: true` / `MC_ALLOW_PROC=1` |
 | Secrets | API-key files, gateway probes, private probe records | No keys in the repo. Optional balance lookup reads a Host env key and calls a configured endpoint; never logged/returned |
 | Private project names | Constraint files, internal plan/guide names, private module names | Generic “workspace” / “Mission Control” wording; private mission-replay and cross-module contracts removed |
@@ -75,9 +75,10 @@ variable, no key, no token.
 ## Privacy defaults
 
 - Collector binds to **127.0.0.1** and refuses non-loopback binds.
-- No authentication is implemented; loopback is the security boundary.
-- CORS is permissive only because the DSH Web UI is also a loopback origin.
-  Do not expose port 7799 through a proxy or firewall rule.
+- The full HUD uses a random `HttpOnly; SameSite=Strict` cookie; all APIs except health require it.
+- The compact 7799 API uses an exact DSH-origin allowlist; there is no wildcard CORS.
+- Mutating endpoints require POST + same-origin Origin; do not expose either port through a proxy or firewall rule.
+- The optional balance check is the only outbound network path; it is disabled unless MC_BALANCE_URL is explicit.
 - File watching is opt-in via `enableFileWatch` and can be disabled with
   `enableFileWatch: false`.
 - `demoMode` is only used by `demo/server.mjs`; the DSH host row defaults to

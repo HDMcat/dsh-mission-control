@@ -77,9 +77,12 @@ DSH Host process
          └─ full Mission Control HUD + DSH session reader / fs radar / git /
             telemetry / process list
               GET /            (full window)
-              GET /api/state
-              GET /api/stream
-              POST /api/settings
+              GET /api/state        (HUD cookie)
+              GET /api/stream       (HUD cookie)
+              POST /api/select      (cookie + same-origin)
+              POST /api/open-file   (cookie + same-origin)
+              POST /api/open-folder (cookie + same-origin)
+              POST /api/settings    (cookie + same-origin)
               POST /api/proc/kill   (only when allowProcessControl=true)
 
 DSH Web UI (browser)
@@ -99,6 +102,7 @@ served by the child process; no iframe is used.
 | `port` | `7799` | Loopback port for the compact collector |
 | `fullPort` | `7800` | Loopback port for the full-window dashboard |
 | `fullWindow` | `true` | Start the full dashboard child process |
+| `allowedOrigins` | `DSH_WEB_URL` | Exact DSH Web origin(s) allowed to read the compact API |
 | `allowProcessControl` | `false` | Enable `/api/proc/kill` in the full HUD |
 | `watchDir` | `""` | Workspace root; empty keeps file watching off / neutral temp root |
 | `pollMs` | `2000` | Collector refresh and UI polling cadence |
@@ -141,7 +145,7 @@ page requests fullscreen / shows the F11 / ⛶ hint. The desk pet was removed.
 Visual verification inside DSH cannot be done from this repository alone; a
 successful install and slot registration are not proof of what a user sees.
 
-## Known limitations of 0.5.0
+## Known limitations of 0.5.1
 
 - The standalone fullscreen launcher needs Chrome or Edge on the same Windows
   machine; otherwise it falls back to a screen-sized popup.
@@ -159,5 +163,5 @@ successful install and slot registration are not proof of what a user sees.
 - `fs.watch(..., { recursive: true })` is reliable on Windows/macOS; on some
   Linux Node builds recursive watching is unsupported, so events stay empty.
 - `nvidia-smi` is optional; without it the GPU card shows “unavailable”.
-- No authentication: keep both loopback ports private.
+- The full HUD uses a per-process local cookie, and the compact panel uses a DSH-origin allowlist. There is still no remote/multi-user auth; keep both ports private.
 

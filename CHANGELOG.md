@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.1 — security hardening
+
+- Full HUD APIs now require a per-process `HttpOnly; SameSite=Strict` cookie;
+  the control token is no longer exposed in `/api/state`.
+- Mutating HUD routes (`open-file`, `open-folder`, `select`, `settings`,
+  `proc/kill`) require POST + same-origin Origin.
+- Compact 7799 CORS is an exact DSH Web origin allowlist; wildcard CORS removed.
+- Both servers validate loopback Host headers and send baseline security headers.
+- `/api/balance` no longer forwards `DEEPSEEK_API_KEY` implicitly; it is opt-in
+  via `MC_BALANCE_URL` and requires HTTPS by default.
+- Node engine aligned to >=22; installed profile synchronized with source.
+- Added `scripts/security-check.mjs` to the test suite.
+
 ## 0.5.0 — standalone fullscreen, no desk pet
 
 - Removed the desk pet and the floating DSH summon bar; the bottom **MC/FULL**

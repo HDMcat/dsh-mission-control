@@ -6,7 +6,8 @@
  *    opens it in a separate window; this keeps the full HUD out of the host
  *    single-slot layout while preserving the complete dashboard.
  *
- * No credentials, command lines, or remote write endpoints are exposed.
+ * The compact panel is read-mostly. Credentials are not sent by this module;
+ * an explicitly configured balance check is the only outbound capability.
  */
 
 import fs from 'node:fs';
@@ -19,12 +20,35 @@ import { startTelemetryServer } from './src/server.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const name = 'dsh-mission-control';
 
+function configuredOrigins(config = {}) {
+  const out = new Set();
+  const add = (value) => {
+    if (!value) return;
+    try {
+      const u = new URL(String(value));
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+      out.add(u.origin);
+      // DSH may be opened as localhost or 127.0.0.1; allow both loopback spellings.
+      const scheme = u.protocol;
+      const port = u.port || (scheme === 'https:' ? 443 : 80);
+      if (u.hostname === '127.0.0.1') out.add(`${scheme}//localhost:${port}`);
+      if (u.hostname === 'localhost') out.add(`${scheme}//127.0.0.1:${port}`);
+    } catch { /* ignore invalid origin */ }
+  };
+  const raw = config.allowedOrigins ?? process.env.MC_ALLOWED_ORIGINS ?? process.env.DSH_WEB_URL ?? '';
+  if (Array.isArray(raw)) raw.forEach(add);
+  else String(raw || '').split(',').forEach((x) => add(x.trim()));
+  return [...out];
+}
+
 export function apply(ctx, config = {}) {
   const port = Number(config.port) || 7799;
   const fullPort = Number(config.fullPort) || 7800;
+  const allowedOrigins = configuredOrigins(config);
   const configuredWatch = typeof config.watchDir === 'string' && config.watchDir.trim()
     ? config.watchDir.trim()
     : '';
+
   const watchDir = configuredWatch || process.cwd();
   const pollMs = Number(config.pollMs) || 2000;
   // Privacy default: never watch an arbitrary process cwd. A user must opt in
@@ -42,6 +66,7 @@ export function apply(ctx, config = {}) {
       demoMode,
       demoDir: null,
       fullPort,
+      allowedOrigins,
     });
   } catch (error) {
     console.error('[mission-control] compact server failed:', error?.message || error);

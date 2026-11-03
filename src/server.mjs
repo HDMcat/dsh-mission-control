@@ -2,8 +2,8 @@
  * Loopback-only HTTP/SSE server for the dashboard.
  *
  * The server intentionally has no write endpoints and no process-control API.
- * It binds to 127.0.0.1 and sends permissive CORS headers so the DSH Web UI
- * (which runs on a different loopback port) can read snapshots.
+ * It binds to 127.0.0.1. Cross-origin reads are limited to the exact DSH Web
+ * origin via an allowlist; there is no wildcard CORS.
  */
 
 import http from 'node:http';
@@ -13,6 +13,10 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createHub } from './telemetry.mjs';
+import {
+  allowedOriginSet, isLoopbackHost, originAllowed, setCorsForAllowedOrigin,
+  setSecurityHeaders,
+} from './http-security.mjs';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -24,13 +28,6 @@ const MIME = {
   '.json': 'application/json; charset=utf-8',
   '.ico': 'image/x-icon',
 };
-
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 'no-store');
-}
 
 function findFullScreenBrowser() {
   const roots = [
@@ -52,8 +49,7 @@ function findFullScreenBrowser() {
 }
 
 function json(res, status, body) {
-  cors(res);
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
 
@@ -67,7 +63,6 @@ function serveStatic(res, rootDir, pathname) {
   let stat;
   try { stat = fs.statSync(target); } catch { return false; }
   if (!stat.isFile()) return false;
-  cors(res);
   res.writeHead(200, {
     'Content-Type': MIME[path.extname(target).toLowerCase()] || 'application/octet-stream',
     'Content-Length': stat.size,
@@ -85,6 +80,7 @@ export function startTelemetryServer({
   demoMode = false,
   demoDir = null,
   fullPort = 7800,
+  allowedOrigins = [],
 } = {}) {
   // Hard safety default: never expose telemetry on a non-loopback interface.
   const bindHost = '127.0.0.1';
@@ -92,11 +88,22 @@ export function startTelemetryServer({
   const hub = createHub({ watchDir, pollMs, enableFileWatch, demoMode });
   const clients = new Set();
   let broadcast = null;
+  const allowed = allowedOriginSet(allowedOrigins);
+  const requestedPort = Number(port);
+  const configuredPort = Number.isInteger(requestedPort) && requestedPort >= 0 ? requestedPort : 7799;
+  const currentPort = () => Number(server.address()?.port) || configuredPort;
 
   const server = http.createServer((req, res) => {
     const method = req.method || 'GET';
+    setSecurityHeaders(res);
+    if (!isLoopbackHost(req.headers.host, currentPort())) {
+      return json(res, 403, { ok: false, error: 'host not allowed' });
+    }
+    if (!originAllowed(req, allowed)) {
+      return json(res, 403, { ok: false, error: 'origin not allowed' });
+    }
+    setCorsForAllowedOrigin(req, res, allowed);
     if (method === 'OPTIONS') {
-      cors(res);
       res.writeHead(204);
       res.end();
       return;
@@ -149,11 +156,11 @@ export function startTelemetryServer({
       return;
     }
     if (pathname === '/api/stream') {
-      cors(res);
       res.writeHead(200, {
         'Content-Type': 'text/event-stream; charset=utf-8',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
+        'Cache-Control': 'no-store',
       });
       res.write(`data: ${JSON.stringify(hub.snapshot())}\n\n`);
       clients.add(res);
@@ -179,7 +186,7 @@ export function startTelemetryServer({
     console.error('[mission-control] server error:', error?.code || error?.message || error);
   });
 
-  server.listen(Number(port) || 7799, bindHost, () => {
+  server.listen(configuredPort, bindHost, () => {
     hub.start();
     broadcast = setInterval(() => {
       if (!clients.size) return;

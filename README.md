@@ -3,8 +3,8 @@
 **Mission Control** is a privacy-first local observability add-on for **DeepSeek
 Harness (DSH)**. It runs a loopback-only collector in the DSH Host process and
 renders a native React panel in the DSH Web UI right sidebar, with an optional
-full-window HUD for deep inspection. All data stays on the machine: there is no
-credential, command-line, or remote write endpoint in the compact surface.
+full-window HUD for deep inspection. All collected data stays on the machine. The compact surface is read-mostly and
+uses a strict DSH-origin allowlist; the full HUD uses a same-site HttpOnly cookie.
 
 ![Mission Control cat](icon.png)
 
@@ -13,7 +13,7 @@ It is the plugin icon and the full-HUD logo. The owner has confirmed redistribut
 permission for this project; see [`NOTICE`](NOTICE). Artwork rights remain with the
 provider and are used with permission for this project.*
 
-> Status: **0.5.0 / cat identity + standalone fullscreen**. Compact panel, the
+> Status: **0.5.1 / security hardening + standalone fullscreen**. Compact panel, the
 > **FULL** launcher, and the full HUD in a separate fullscreen browser window are implemented.
 > The desk pet was removed. No floating summon bar: the bottom dock keeps MC/FULL.
 > Re-test in your own DSH profile and in both light/dark themes before release.
@@ -46,8 +46,9 @@ real session content at runtime; do not screen-share it without checking.
 - The full window: four gauges + COMPUTE, TASK BAR/workflow timeline and session
   picker, filesystem radar + git, HARDWARE matrix, PROJECT FOLDER, 24 themes,
   directory settings, and opt-in process control.
-- **No write APIs by default**, no remote access, no credentials. Process control
-  and file watching are opt-in; no absolute path is returned by the compact panel.
+- No remote access. Full-HUD mutations require a same-site cookie and same-origin
+  request; process control and file watching are opt-in. The compact panel uses a
+  DSH-origin allowlist, not wildcard CORS.
 
 ## Quick start (standalone, no DSH needed)
 
@@ -107,8 +108,9 @@ Privacy behavior:
 
 - `watchDir` empty → the full HUD watches a neutral temporary workspace, not the
   DSH process directory.
-- Session workflow text is rendered locally from DSH projections; it is not sent
-  anywhere. Do not screen-share the full window if that text is sensitive.
+- Session workflow text is rendered locally from DSH projections and is not sent
+  off the machine. The full HUD itself is sensitive; do not screen-share it unless
+  you have checked the content.
 - Process control is off by default; the UI shows READONLY.
 - The PAPER budget values are a **generic reference envelope**, not the private
   report numbers. Edit `PAPER` in `dashboard/public/app.js` for your own hardware.
@@ -176,11 +178,27 @@ Runtime behavior is split:
   relative to the configured root and are disabled by default.
 - **Full HUD** reads local DSH session projections, process lines, and workspace
   events **at runtime** and renders them only in the loopback window. Nothing is
-  uploaded. Its default workspace is a neutral temporary directory; session cwd is
-  masked to a basename; process control is off unless explicitly enabled.
+  uploaded unless the optional balance URL is explicitly configured. Its default
+  workspace is a neutral temporary directory; session cwd is masked to a basename;
+  process control is off unless explicitly enabled.
 
 See [`docs/SANITIZATION.md`](docs/SANITIZATION.md) for the full runtime-surface
 audit.
+
+## Security model
+
+- **7800 full HUD** issues a random `HttpOnly; SameSite=Strict` cookie when the
+  page is loaded. All APIs except `/api/health` require it; mutations also require
+  POST + same-origin `Origin`.
+- **7799 compact panel** allows cross-origin reads only from the exact DSH Web
+  origin (`DSH_WEB_URL`, or `MC_ALLOWED_ORIGINS`). There is no wildcard CORS.
+  A missing DSH origin fails closed; configure the allowlist explicitly.
+- Both servers reject non-loopback `Host` headers to reduce DNS-rebinding risk.
+- `/api/open-file`, `/api/open-folder`, `/api/select`, `/api/settings`, and
+  `/api/proc/kill` are same-site, same-origin operations.
+- Balance is the only optional outbound capability. It is disabled unless
+  `MC_BALANCE_URL` is explicitly set. `DEEPSEEK_API_KEY` is not forwarded unless
+  `MC_BALANCE_USE_DSH_KEY=1` is also set.
 
 ## Repository layout
 
@@ -222,7 +240,7 @@ one required DSH install test.
 - A privacy-redacted workflow mode: the full HUD renders local DSH session text.
   A later version can add aggregate-only counters for safe screen sharing.
 - Disk read speed uses raw Windows `Win32_PerfRawData_PerfDisk_LogicalDisk` deltas; cached/idle reads can legitimately show `0 B/s`, and `MAX` is the observed peak for the current server session.
-- A Host Remote transport; 0.5.0 still uses loopback HTTP + a child process.
+- A Host Remote transport; 0.5.1 still uses loopback HTTP + a child process.
 - Process control is present but **disabled by default**; enable it explicitly
   with `allowProcessControl: true` in a trusted local environment.
 - Per-user auth or remote access. The collector is loopback-only by design.
@@ -233,7 +251,7 @@ one required DSH install test.
 
 | Version | Scope |
 |---|---|
-| 0.5.0 (this repo) | Cat identity + standalone fullscreen HUD (no desk pet) |
+| 0.5.1 (this repo) | Security hardening: HUD cookie, origin allowlist, opt-in balance |
 | 0.6 | DSH aggregate workflow counters without local transcript text |
 | 0.7 | Replace the loopback HTTP/child process with Host Remotes; remove fixed ports/CORS |
 
@@ -241,7 +259,7 @@ one required DSH install test.
 
 - Host collector, demo API, privacy payload, bundle manifest, Client registration
   wiring: **verified locally** by `scripts/check.mjs`, `manifest-check.mjs`,
-  `smoke-host.mjs`, and `smoke-client.mjs`.
+  `smoke-host.mjs`, `smoke-client.mjs`, and `security-check.mjs`.
 - DSH install + rendered compact panel: **verified in an isolated sandbox profile**
   (`mc-sandbox`): Host row active, loopback `/api/health` 200, compact panel
   rendered four live metrics with no Mission Control client errors.

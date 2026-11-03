@@ -22,7 +22,6 @@
     sampleMs: 2000,
     lastAt: 0,
     pinnedInit: false,
-    controlToken: '',
     readonly: false,
     root: '',
   };
@@ -690,7 +689,7 @@
     if (!sel) return;
     sel.addEventListener('change', () => {
       sessChoice = sel.value || 'auto';
-      fetch('/api/select?id=' + encodeURIComponent(sessChoice)).catch(() => { /* offline */ });
+      fetch('/api/select', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: sessChoice }) }).catch(() => { /* offline */ });
     });
   }
 
@@ -1614,7 +1613,6 @@
     state.now = s.now || Date.now();
     state.lastAt = Date.now();
     state.sampleMs = s.sampleMs || 2000;
-    state.controlToken = s.controlToken || state.controlToken;
     state.readonly = !!s.readonly;
     state.root = s.root || state.root;
     if (!state.pinnedInit) {
@@ -1732,7 +1730,7 @@
     try {
       const r = await fetch('/api/proc/kill', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Control-Token': state.controlToken },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pid }),
       });
       const j = await r.json();
@@ -1905,7 +1903,7 @@
     try {
       const r = await fetch('/api/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Control-Token': state.controlToken },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ root }),
       });
       const j = await r.json();

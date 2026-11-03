@@ -44,7 +44,7 @@ test.
 
 ```bash
 npm publish --access public
-git tag v0.5.0
+git tag v0.5.1
 git push --tags
 ```
 

@@ -36,7 +36,7 @@ try {
   const serialized = JSON.stringify(snap);
   if (/[A-Za-z]:[\\/]+(Users|E:|D:)/i.test(serialized)) throw new Error('snapshot contains an absolute Windows path');
   const cors = snapRes.headers.get('access-control-allow-origin');
-  if (cors !== '*') throw new Error('missing CORS header');
+  if (cors) throw new Error('unexpected CORS header without an allowed Origin');
 
   const page = await fetch(`${BASE}/`);
   const root = await page.json();
