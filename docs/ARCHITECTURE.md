@@ -67,6 +67,7 @@ component is imported; no private DOM is read.
 
 - GPU unavailable → `gpu: null`, card shows “unavailable”.
 - Disk API unavailable → `disk: null`.
+- Live disk I/O adds `readBps`, `writeBps`, `peakReadBps`; `HARDWARE` renders `readBps / peakReadBps` as usage.
 - File watching unsupported → `watch.enabled: false`; metrics still update.
 - API unreachable in the browser → inline error + `OFFLINE` badge; no fake data.
 - Port busy → Host logs an error; DSH remains alive.

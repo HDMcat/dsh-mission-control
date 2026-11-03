@@ -44,14 +44,14 @@ real session content at runtime; do not screen-share it without checking.
 - **FULL** starts a separate Chrome/Edge app-mode fullscreen window; no floating
   or in-DSH movable launcher remains.
 - The full window: four gauges + COMPUTE, TASK BAR/workflow timeline and session
-  picker, filesystem radar + git, HARDWARE matrix, PROJECT FOLDER, 21 themes,
+  picker, filesystem radar + git, HARDWARE matrix, PROJECT FOLDER, 24 themes,
   directory settings, and opt-in process control.
 - **No write APIs by default**, no remote access, no credentials. Process control
   and file watching are opt-in; no absolute path is returned by the compact panel.
 
 ## Quick start (standalone, no DSH needed)
 
-Requires Node.js **20+** (22 recommended; no npm dependencies).
+Requires Node.js **22+** (22/24 tested in CI; no npm dependencies).
 
 ```bash
 cd <this-repo>
@@ -92,9 +92,11 @@ Full-window contents:
 
 - TASK BAR: DSH workflow, session picker, context/token pressure;
 - FILESYSTEM RADAR + git + live change feed;
-- full HARDWARE matrix (all fixed disks) with explicit N/A sensor fields;\n- one-time first-load hardware benchmark (CPU / memory / sequential disk R/W / NIC link) and a persistent DISK READ / WRITE + NET PEAK / MAX strip;
+- full HARDWARE matrix (all fixed disks) with explicit N/A sensor fields;
+- one-time first-load hardware benchmark (CPU / memory / sequential disk R/W / NIC link) and a persistent DISK READ / WRITE + NET PEAK / MAX strip;
+- per-disk live read speed from raw Windows performance counters; the usage bar is current read / observed MAX, not capacity usage;
 - PROJECT FOLDER window with true folder/file listing and one-click open;
-- 21 themes and directory settings;
+- 24 themes (8 groups × 3) and directory settings;
 - standalone fullscreen window launched by the Host (Chrome/Edge app mode);
 - process control **only if** `MC_ALLOW_PROC=1` / `allowProcessControl: true`.
 
@@ -219,7 +221,7 @@ one required DSH install test.
   from the port; the full HUD itself is present.
 - A privacy-redacted workflow mode: the full HUD renders local DSH session text.
   A later version can add aggregate-only counters for safe screen sharing.
-- Physical disk I/O counters (format constraints; not a UI omission).
+- Disk read speed uses raw Windows `Win32_PerfRawData_PerfDisk_LogicalDisk` deltas; cached/idle reads can legitimately show `0 B/s`, and `MAX` is the observed peak for the current server session.
 - A Host Remote transport; 0.5.0 still uses loopback HTTP + a child process.
 - Process control is present but **disabled by default**; enable it explicitly
   with `allowProcessControl: true` in a trusted local environment.

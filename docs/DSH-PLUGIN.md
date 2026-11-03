@@ -57,7 +57,7 @@ So the user-facing routes are:
 The FULL window is served by an isolated child process on the loopback port
 `fullPort` (default 7800). It is the complete dashboard port: gauges + COMPUTE,
 TASK BAR/workflow timeline, filesystem radar/git, HARDWARE matrix, PROJECT FOLDER,
-21 themes, directory settings, and
+24 themes, directory settings, and
 opt-in process control. The child is cleaned up with the plugin context.
 
 If the composer dock is unavailable in a future DSH version, the tab can still be

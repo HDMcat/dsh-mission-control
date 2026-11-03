@@ -50,7 +50,7 @@ host { platform, arch, release, uptime_s, load[] }
 cpu { pct, cores[], model }
 mem { pct, used, total }
 gpu { name, pct, memUsed, memTotal, memPct, temp, power, clock } | null
-disk { total, free, used, pct } | null
+disk { total, free, used, pct, readBps, writeBps, peakReadBps } | null
 watch { enabled, label, recent }
 files [{ id, t, kind, rel, area }]
 series { cpu[], mem[], gpu[] }
