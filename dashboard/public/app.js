@@ -1250,8 +1250,18 @@
       const key = `disk:${drive}`;
       addHwRow(key, `DISK ${drive}`, C.ochre2);
       const dd = disks[drive];
-      updateHwRow(key, 'NVMe SSD · ' + drive, dd.pct, `${fmtBytes(dd.free)} free / ${fmtBytes(dd.total)}`,
-        'N/A', 'N/A', dd.pct > 92 ? ['LOW', C.cinnabar] : dd.pct > 80 ? ['FULL', C.ochre] : ['OK', C.blue2]);
+      const readBps = Math.max(0, Number(dd.readBps) || 0);
+      const peakBps = Math.max(0, Number(dd.peakReadBps) || readBps);
+      const readPct = peakBps > 0 ? clamp((readBps / peakBps) * 100, 0, 100) : 0;
+      const readTxt = `${fmtBytes(readBps)}/s`;
+      const maxTxt = peakBps > 0 ? `${fmtBytes(peakBps)}/s` : 'N/A';
+      const stateOverride = dd.pct > 92 ? ['LOW', C.cinnabar]
+        : readBps > 0 ? ['READ', readPct > 75 ? C.cinnabar : C.blue2]
+        : ['IDLE', C.ink4];
+      updateHwRow(key, 'NVMe SSD · ' + drive, readPct, `${readTxt} · ${fmtBytes(dd.free)} free`,
+        'N/A', 'N/A', stateOverride);
+      hwRefs[key].pct.title = `实时读取 ${readTxt} / 观测 MAX ${maxTxt}`;
+      hwRefs[key].val.title = `已用 ${dd.pct}% · 可用 ${fmtBytes(dd.free)} / 总 ${fmtBytes(dd.total)} · 读取 ${readTxt}`;
       hwRefs[key].temp.title = '本机磁盘未暴露温度传感器（StorageReliabilityCounter 不可访问）';
       hwRefs[key].power.title = '本机磁盘未暴露功率传感器';
       if (drive === 'E:') {
@@ -1260,7 +1270,7 @@
       }
     }
     const note = $('#hwNote');
-    if (note) note.textContent = `已枚举 ${driveKeys.length} 个固定磁盘 · GPU/VRAM 温度、功率为 nvidia-smi 包级读数（*）；CPU/磁盘传感器不可用时显示 N/A，不伪造。`;
+    if (note) note.textContent = `磁盘“读取 / MAX”= 实时读取速度 / 本会话观测 MAX；容量占用在右侧列。GPU/VRAM 温度、功率为 nvidia-smi 包级读数（*）；CPU/磁盘传感器不可用时显示 N/A，不伪造。`;
     $('#hwTime').textContent = hhmmss(Date.now());
     renderPaper(s);
   }

@@ -166,11 +166,13 @@ class SystemTelemetry {
     this.netLinkMbps = null; this.netLinkName = null; this.netLinkBusy = false;
     this.disk = { total: 0, free: 0, used: 0, pct: 0 };
     this.disks = {};
+    this.diskIo = {}; this.diskIoPeak = {}; this.diskIoBusy = false; this.lastDiskIoAt = 0;
     this.lastCpuSample = this.cpuTimes();
     this.lastCoreTimes = os.cpus().map((c) => ({ ...c.times }));
     this.lastCpuAt = Date.now();
     this.emaCpu = 0;
     this.readDisk();
+    this.readDiskIo();
     this.readNetLink();
   }
   cpuTimes() {
@@ -257,6 +259,33 @@ class SystemTelemetry {
     }
     this.disks = next;
     if (!this.disk || !this.disks['E:']) this.disk = this.disks[Object.keys(this.disks)[0]] || this.disk;
+  }
+  readDiskIo() {
+    if (this.diskIoBusy || Date.now() - (this.lastDiskIoAt || 0) < 1200) return;
+    this.diskIoBusy = true;
+    this.lastDiskIoAt = Date.now();
+    const ps = [
+      '$OutputEncoding=[Console]::OutputEncoding=[Text.Encoding]::UTF8;',
+      'Get-CimInstance Win32_PerfFormattedData_PerfDisk_LogicalDisk |',
+      'Select-Object Name,DiskReadBytesPerSec,DiskWriteBytesPerSec | ConvertTo-Json -Compress',
+    ].join(' ');
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps],
+      { timeout: 7000, windowsHide: true, encoding: 'utf8' }, (err, stdout) => {
+        this.diskIoBusy = false;
+        if (err || !stdout) return;
+        try {
+          let rows = JSON.parse(String(stdout || '{}'));
+          if (!Array.isArray(rows)) rows = [rows];
+          for (const row of rows) {
+            const name = String(row?.Name || '').toUpperCase();
+            if (!/^[A-Z]:$/.test(name)) continue;
+            const readBps = Math.max(0, num(Number(row.DiskReadBytesPerSec)));
+            const writeBps = Math.max(0, num(Number(row.DiskWriteBytesPerSec)));
+            this.diskIo[name] = { readBps, writeBps, at: Date.now() };
+            this.diskIoPeak[name] = Math.max(this.diskIoPeak[name] || 0, readBps);
+          }
+        } catch { /* counters can be unavailable; keep last sample */ }
+      });
   }
   readGpu() {
     return new Promise((resolve) => {
@@ -391,6 +420,7 @@ class SystemTelemetry {
     this.sampleCpu();
     this.readGpu();
     this.readProcs();
+    this.readDiskIo();
     const g = this.gpu;
     pushSeries('cpu', this.displayCpu());
     pushSeries('mem', this.mem.pct);
@@ -400,6 +430,18 @@ class SystemTelemetry {
   }
   snapshot() {
     const g = this.gpu;
+    const disksOut = {};
+    for (const [drive, d] of Object.entries(this.disks || {})) {
+      const io = this.diskIo?.[drive] || {};
+      disksOut[drive] = {
+        ...d,
+        readBps: Math.max(0, num(io.readBps || 0)),
+        writeBps: Math.max(0, num(io.writeBps || 0)),
+        peakReadBps: Math.max(0, num(this.diskIoPeak?.[drive] || 0)),
+        ioAt: io.at || null,
+      };
+    }
+    const diskOut = disksOut['E:'] || this.disk;
     return {
       cpu: {
         pct: this.displayCpu(), nodePct: this.cpu.pct, winPct: this.cpu.winPct, winAt: this.cpu.winAt,
@@ -412,8 +454,9 @@ class SystemTelemetry {
         encUtil: g.encUtil, decUtil: g.decUtil, clockMax: g.clockMax, powerLimit: g.powerLimit,
       } : null,
       procs: this.procs,
-      disk: this.disk,
-      disks: this.disks,
+      disk: diskOut,
+      disks: disksOut,
+      diskBenchReadMBs: BENCH_RESULT?.diskReadMBs ?? null,
       net: this.net,
       uptime: os.uptime(),
     };
