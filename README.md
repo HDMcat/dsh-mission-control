@@ -269,3 +269,10 @@ MIT for code and documentation. The cat artwork is user-provided and included
 with the owner's permission for this project; see [`NOTICE`](NOTICE). No third-party icon font is bundled. See [`LICENSE`](LICENSE) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## Evaluate with your own DeepSeek
+
+Want a second opinion before installing? Copy the prompt in
+[`docs/EVALUATE-WITH-DEEPSEEK.md`](docs/EVALUATE-WITH-DEEPSEEK.md) into your
+DeepSeek: it will inspect this repo, check fit with your DSH environment, and
+give install / verify / rollback steps without auto-installing.
+
