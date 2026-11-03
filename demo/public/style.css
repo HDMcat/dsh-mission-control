@@ -1,0 +1,59 @@
+:root {
+  --bg: #0b1020;
+  --surface: #121a2e;
+  --surface-2: #17213a;
+  --text: #e7eefc;
+  --muted: #8ea2c4;
+  --line: rgba(142, 162, 196, .18);
+  --cpu: #3ddc97;
+  --mem: #58a6ff;
+  --gpu: #b18cff;
+  --disk: #f0b45c;
+  --danger: #ff6b6b;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f3f6fb;
+    --surface: #ffffff;
+    --surface-2: #f8fafd;
+    --text: #17213a;
+    --muted: #61708c;
+    --line: rgba(23, 33, 58, .12);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.mc { max-width: 1180px; margin: 0 auto; padding: 28px 22px 36px; }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { border-radius: 10px; }
+.kicker { color: var(--muted); font: 600 10px/1 ui-monospace, Consolas, monospace; letter-spacing: .16em; }
+h1 { margin: 4px 0 0; font-size: 22px; letter-spacing: .06em; }
+.status { display: flex; align-items: center; gap: 10px; }
+.pill { padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 600 10px/1 ui-monospace, Consolas, monospace; letter-spacing: .08em; }
+.pill.demo { color: var(--disk); border-color: rgba(240, 180, 92, .34); }
+.muted { color: var(--muted); font: 11px/1.4 ui-monospace, Consolas, monospace; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0; }
+.metric-head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font: 600 10px/1 ui-monospace, Consolas, monospace; letter-spacing: .1em; }
+.ring { --pct: 0; --color: var(--cpu); width: 92px; height: 92px; border-radius: 50%; margin: 12px auto 8px; display: grid; place-items: center; background: conic-gradient(var(--color) calc(var(--pct) * 1%), var(--line) 0); }
+.ring-inner { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: baseline; justify-content: center; gap: 1px; background: var(--surface); font: 700 22px/1 ui-monospace, Consolas, monospace; }
+.ring-inner small { font-size: 10px; color: var(--muted); margin-left: 1px; }
+.metric-name { color: var(--muted); font: 10px/1.35 ui-monospace, Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+canvas.spark { display: block; width: 100%; height: 34px; margin-top: 8px; }
+.panel { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.panel-head { display: flex; justify-content: space-between; padding-bottom: 8px; color: var(--muted); font: 600 10px/1 ui-monospace, Consolas, monospace; letter-spacing: .12em; border-bottom: 1px solid var(--line); }
+.events { display: flex; flex-direction: column; gap: 2px; padding-top: 7px; }
+.event { display: grid; grid-template-columns: 62px 16px minmax(0, 1fr); gap: 7px; align-items: baseline; padding: 4px 3px; border-radius: 6px; }
+.event:hover { background: var(--surface-2); }
+.event time { color: var(--muted); font: 10px/1.3 ui-monospace, Consolas, monospace; }
+.event b { color: var(--disk); font: 600 11px/1.3 ui-monospace, Consolas, monospace; text-align: center; }
+.event span { color: var(--muted); font: 11px/1.3 ui-monospace, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { color: var(--muted); padding: 12px 2px; font: 11px/1.4 ui-monospace, Consolas, monospace; }
+.error { margin: 12px 0; padding: 10px 12px; border: 1px solid rgba(255, 107, 107, .35); border-radius: 10px; color: var(--danger); background: rgba(255, 107, 107, .06); font: 11px/1.5 ui-monospace, Consolas, monospace; }
+.foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; color: var(--muted); font: 10px/1.4 ui-monospace, Consolas, monospace; }
+@media (max-width: 860px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .mc { padding: 18px 12px; } .grid { grid-template-columns: 1fr; } .top { flex-direction: column; } }

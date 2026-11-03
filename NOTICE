@@ -1,0 +1,22 @@
+# Notice
+
+## Source code
+
+The source code and documentation in this repository are licensed under the MIT
+License; see `LICENSE`.
+
+## Cat artwork
+
+`icon.png`, `dashboard/public/cat.png`, and `demo/public/cat.png` are the
+user-provided soldering-cat artwork. The project owner has confirmed that they
+own or are authorized to redistribute this artwork with the project.
+
+The artwork is included **with permission for this project**. It is not
+separately relicensed under the MIT License for extraction or reuse outside this
+repository unless the project owner explicitly grants that permission. Forks
+that do not have separate permission should replace these files.
+
+## Third-party assets
+
+No third-party icon font, stock illustration, or bundled proprietary dataset is
+included. Runtime data shown in the full HUD is read locally and is not shipped.

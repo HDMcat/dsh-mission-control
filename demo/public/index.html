@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Mission Control · demo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="mc">
+    <header class="top">
+      <div class="brand">
+        <img src="/cat.png" alt="" width="38" height="38">
+        <div>
+          <div class="kicker">SANITIZED DEMO</div>
+          <h1>MISSION CONTROL</h1>
+        </div>
+      </div>
+      <div class="status">
+        <span class="pill demo" id="badge">DEMO</span>
+        <span class="muted" id="updated">waiting</span>
+      </div>
+    </header>
+
+    <section class="grid" id="metrics"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span>WORKSPACE CHANGES</span>
+        <span class="muted" id="evtCount">0</span>
+      </div>
+      <div class="events" id="events"><div class="empty">No file changes yet.</div></div>
+    </section>
+
+    <footer class="foot">
+      <span id="platform">loopback only</span>
+      <span id="watch">demo workspace</span>
+    </footer>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

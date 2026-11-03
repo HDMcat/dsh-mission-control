@@ -1,0 +1,14 @@
+# Bundle patch for the current DSH profile.
+# Install this whole directory with plugin_manager install_bundle (target: <repo-dir>).
+# Replace the package name and client factory id together if you publish under a different name.
+- insert:
+    - id: mission-control
+      name: dsh-mission-control
+      config:
+        port: 7799
+        fullPort: 7800
+        fullWindow: true
+        allowProcessControl: false
+        watchDir: ""
+        pollMs: 2000
+        enableFileWatch: true

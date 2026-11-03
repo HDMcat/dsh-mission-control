@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F1E9DB">
+<title>MISSION CONTROL</title>
+<link rel="icon" href="/cat.png">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/paper.css">
+<link rel="stylesheet" href="/themes.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-noise"></div>
+<div class="scanlines"></div>
+<div class="scanner"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo"><img src="/cat.png" alt="DSH"></div>
+    <div class="brand-text">
+      <div class="title">DSH <span>MISSION CONTROL</span></div>
+      <div class="subtitle">DEEPSEEK WORKFLOW · HW <b>2 S</b> · FILES <b>1 S</b></div>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <div class="chip"><label>SESSION</label><b id="chipSession">—</b></div>
+    <div class="chip"><label>MODEL</label><b id="chipModel">—</b></div>
+    <div class="chip"><label>MODE</label><b id="chipMode">—</b></div>
+    <div class="clock"><b id="clock">--:--:--</b><span id="date">----/--/--</span></div>
+    <button class="fs-btn" id="setOpen" title="设置（目录 / 配色）" aria-label="设置">⚙</button>
+    <button class="fs-btn" id="fsBtn" title="全屏 (F11)" aria-label="全屏">⛶</button>
+    <button class="fs-btn quit" id="quitBtn" title="退出应用 (Ctrl+Q)" aria-label="退出" hidden>⏻</button>
+    <div class="conn" id="conn"><i></i><span>LINK</span></div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="gauge-row" id="gaugeRow">
+    <!-- gauge cards injected -->
+    <article class="panel gauge workers" id="workersCard">
+      <div class="panel-head small">
+        <div class="ph-title"><i class="dia"></i>COMPUTE <em>计算进程</em></div>
+        <div class="ph-right"><span class="mini" id="workersCount">0</span><button class="mini proc-btn" id="procOpen" title="进程控制">CTRL</button></div>
+      </div>
+      <div class="wc-list" id="workers"></div>
+      <div class="wc-io" id="ioLine">I/O 采样中…</div>
+    </article>
+  </section>
+
+  <section class="mid">
+
+    <section class="panel wf-panel">
+      <div class="panel-head">
+        <div class="ph-title"><i class="dia violet"></i>TASK BAR <em>任务条 · DSH 工作流</em></div>
+        <div class="ph-right">
+          <span class="mini hot" id="wfTurn">T—</span>
+          <span class="mini" id="wfStep">S—</span>
+          <span class="mini" id="wfCalls">0 CALLS</span>
+          <span class="live-tag" id="wfLive"><i></i>LIVE</span>
+        </div>
+      </div>
+
+      <div class="session-strip">
+        <div class="sess-main">
+          <div class="sess-title" id="sessTitle">等待会话…</div>
+          <div class="sess-meta">
+            <span class="tag-model" id="sessModel">—</span>
+            <span id="sessPerm">—</span>
+            <span id="sessCwd"></span>
+            <select id="sessSelect" class="sess-select" title="切换监控的 DSH 会话"></select>
+          </div>
+        </div>
+        <div class="sess-stats" id="sessStats"></div>
+      </div>
+
+      <div class="ctx-line">
+        <div class="ctx-labels"><span>CONTEXT PRESSURE</span><b id="ctxText">—</b></div>
+        <div class="ctx-bar"><i id="ctxFill"></i><u id="ctxMark"></u></div>
+        <div class="token-chips" id="tokenChips"></div>
+      </div>
+
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <section class="panel radar-panel">
+      <div class="panel-head">
+        <div class="ph-title"><i class="dia green"></i>FILESYSTEM RADAR <em id="radarRoot"></em></div>
+        <div class="ph-right">
+          <span class="mini" id="feedRate">0 / MIN</span>
+          <span class="watch-dot" id="watchDot"></span>
+        </div>
+      </div>
+
+      <div class="radar-body">
+        <div class="radar-wrap">
+          <canvas id="radarCanvas"></canvas>
+          <div class="radar-center"><b>DSH</b><span id="radarCenterRoot"></span></div>
+        </div>
+        <div class="area-list" id="areaList"></div>
+        <div class="radar-side">
+          <div class="rs-label">EVENT RATE</div>
+          <div class="rs-rate"><b id="rateBig">0</b><span>EV/MIN</span></div>
+          <canvas id="rateSpark"></canvas>
+          <div class="rs-row"><span>HOT ZONE</span><b id="hotZone">—</b></div>
+          <div class="rs-row"><span>TOTAL EVT</span><b id="totalEvents">0</b></div>
+          <div class="rs-row"><span>WATCH</span><b id="watchState">RECURSIVE</b></div>
+        </div>
+      </div>
+
+      <div class="feed-head">
+        <span><i class="blink"></i>LIVE CHANGES</span>
+        <span id="totalChanges">0 EVENTS</span>
+      </div>
+      <div class="feed" id="feed"></div>
+
+      <div class="gitbar" id="gitbar">
+        <span class="git-branch" id="gitBranch">main</span>
+        <span class="git-dirty" id="gitDirty">—</span>
+        <span class="git-head" id="gitHead">—</span>
+      </div>
+    </section>
+  </section>
+
+  <section class="bottom">
+
+    <section class="panel hw-panel" id="hwPanel">
+      <div class="panel-head">
+        <div class="ph-title"><i class="dia amber"></i>HARDWARE <em>全硬件状态</em></div>
+        <div class="hw-tabs" id="hwTabs">
+          <button class="on" data-hw="live">LIVE</button>
+          <button data-hw="paper">PAPER 0.5</button>
+        </div>
+        <div class="ph-right"><span class="mini">2 S</span><span class="mini" id="hwTime">—</span></div>
+      </div>
+      <div class="hw-scroll" id="hwLive">
+        <table class="hw-table">
+          <thead>
+            <tr><th>设备</th><th>型号</th><th class="w-load">使用率</th><th>容量 / 频率</th><th>温度</th><th>功耗</th><th>状态</th></tr>
+          </thead>
+          <tbody id="hwBody"></tbody>
+        </table>
+      </div>
+      <div class="hw-note" id="hwNote">温度/功率：GPU/VRAM 使用 nvidia-smi 包级读数（*）；无本机传感器时显示 N/A，不伪造。</div>
+      <div class="hw-paper hidden" id="hwPaper">
+        <div class="paper-kpis">
+          <div><span>GPU FP16</span><b>24.0<span>TFLOPS</span></b><i>generic reference</i></div>
+          <div><span>SPEEDUP</span><b>2.00×</b><i>generic envelope</i></div>
+          <div><span>CPU GEMM</span><b>300<span>GFLOPS</span></b><i>generic envelope</i></div>
+          <div><span>20T SCALE</span><b>5.00×</b><i>generic envelope</i></div>
+        </div>
+        <div class="paper-bars">
+          <div class="pb"><span>GPU CLOCK</span><div class="pb-track"><i id="pbClock"></i></div><b id="pbClockTxt">—</b></div>
+          <div class="pb"><span>GPU POWER</span><div class="pb-track"><i id="pbPower"></i></div><b id="pbPowerTxt">—</b></div>
+          <div class="pb"><span>GPU TEMP</span><div class="pb-track"><i id="pbTemp"></i></div><b id="pbTempTxt">—</b></div>
+          <div class="pb"><span>VRAM</span><div class="pb-track"><i id="pbVram"></i></div><b id="pbVramTxt">—</b></div>
+        </div>
+        <div class="paper-note">GENERIC REFERENCE ENVELOPE · edit PAPER in app.js for your own hardware · not a benchmark claim</div>
+      </div>
+    </section>
+
+    <section class="panel chart-panel hidden" id="chartPanel">
+      <div class="panel-head">
+        <div class="ph-title"><i class="dia cyan"></i>TELEMETRY <em>3 MIN · TRACE</em></div>
+        <div class="ph-right legend">
+          <span><i style="--c:var(--blue)"></i>GPU</span>
+          <span><i style="--c:var(--cinnabar)"></i>CPU</span>
+          <span><i style="--c:var(--ochre)"></i>RAM</span>
+          <button class="trace-btn" id="traceExport" title="导出最近 3 分钟 Perfetto 兼容 trace">⭳ TRACE</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="mainChart" title="顶部 TRACE：工具调用 / 文件变更，悬停查看"></canvas>
+        <div class="chart-tip" id="chartTip"></div>
+      </div>
+    </section>
+
+    <section class="panel folder-panel" id="folderPanel">
+      <div class="panel-head">
+        <div class="ph-title"><i class="dia amber"></i>PROJECT FOLDER <em>工程文件夹</em></div>
+        <div class="ph-right">
+          <span class="mini" id="folderRoot">—</span>
+          <button class="mini" id="folderOpen" title="在资源管理器中打开当前文件夹">打开 ↗</button>
+        </div>
+      </div>
+      <div class="folder-path" id="folderPath">/</div>
+      <div class="folder-list" id="folderList"></div>
+      <div class="folder-foot">
+        <button class="mini" id="folderUp">↑ 上级</button>
+        <button class="mini" id="folderRefresh">刷新</button>
+        <span id="folderMsg"></span>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="foot-time"><span id="footDate">----/--/--</span><b id="footClock">--:--:--</b></div>
+</footer>
+
+<div class="modal-mask hidden" id="procModal">
+  <div class="proc-modal" role="dialog" aria-modal="true" aria-label="后台进程控制">
+    <div class="pm-head">
+      <div class="pm-title">PROCESS CONTROL <em>后台进程控制</em></div>
+      <button class="pm-close" id="procClose" title="关闭">×</button>
+    </div>
+    <div class="pm-hint">仅列出 python / node / pwsh / powershell。终止会结束整个进程树，未保存的训练进度会丢失。</div>
+    <div class="pm-tools">
+      <input id="procFilter" type="search" placeholder="筛选 名称 / PID / 命令" autocomplete="off">
+      <button id="procRefresh">刷新</button>
+    </div>
+    <div class="pm-list" id="procList"></div>
+    <div class="pm-foot"><span>双击“终止”确认 · 服务端自身已保护</span><span id="procCount"></span></div>
+  </div>
+</div>
+<div class="modal-mask hidden" id="setModal">
+  <div class="set-modal" role="dialog" aria-modal="true" aria-label="设置">
+    <div class="pm-head">
+      <div class="pm-title">SETTINGS <em>目录 / 配色</em></div>
+      <button class="pm-close" id="setClose" title="关闭">×</button>
+    </div>
+    <div class="set-body">
+      <section class="set-sec">
+        <div class="set-label">监控工程目录</div>
+        <div class="set-row">
+          <input id="setRoot" type="text" spellcheck="false" autocomplete="off">
+          <button id="setRootApply">应用目录</button>
+        </div>
+        <div class="set-note" id="setRootNote">应用后文件雷达与 journal 会重置；路径必须是本机可读目录。</div>
+      </section>
+      <section class="set-sec">
+        <div class="set-label">配色方案 <small>3 × 7 组 · 点击立即应用</small></div>
+        <div class="theme-groups" id="themeGroups"></div>
+      </section>
+    </div>
+    <div class="pm-foot"><span>目录保存在 settings.json · 配色保存在浏览器 localStorage</span><span id="setMsg"></span></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/app.js"></script>
+<script>
+(function(){
+  if (!new URLSearchParams(location.search).has('fullscreen')) return;
+  function go(){ try{ document.documentElement.requestFullscreen?.().catch(()=>{}); }catch(e){} }
+  setTimeout(go, 350);
+  document.addEventListener('click', function(){ if(!document.fullscreenElement) go(); }, { once:true });
+})();
+</script>
+<script>
+(function(){
+  function leaveFullscreen(){
+    if (document.fullscreenElement) {
+      try { document.exitFullscreen(); } catch(e){}
+      return true;
+    }
+    try {
+      const fullW = window.outerWidth >= screen.availWidth - 8;
+      const fullH = window.outerHeight >= screen.availHeight - 8;
+      if (fullW || fullH) {
+        const w = Math.round(screen.availWidth * 0.72);
+        const h = Math.round(screen.availHeight * 0.72);
+        window.resizeTo(w, h);
+        window.moveTo(Math.round((screen.availWidth - w) / 2), Math.round((screen.availHeight - h) / 2));
+        return true;
+      }
+    } catch(e){}
+    return false;
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape' && e.key !== 'Esc') return;
+    if (leaveFullscreen()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+})();
+</script>
+</body>
+</html>

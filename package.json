@@ -1,0 +1,68 @@
+{
+  "name": "dsh-mission-control",
+  "version": "0.5.0",
+  "description": "Privacy-first local Mission Control for DeepSeek Harness: full HUD, workflow timeline, filesystem radar, TRACE, 21 themes, and a one-click full-screen launcher. Loopback only.",
+  "type": "module",
+  "license": "MIT",
+  "author": "YOUR NAME",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "dashboard",
+    "telemetry",
+    "monitoring"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "src/*.mjs",
+    "dashboard/server.mjs",
+    "dashboard/public/*",
+    "demo/server.mjs",
+    "demo/public/*",
+    "docs/*.md",
+    "docs/*.png",
+    "scripts/*.mjs",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "LICENSE",
+    "icon.png",
+    "NOTICE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node demo/server.mjs",
+    "demo": "node demo/server.mjs",
+    "check": "node scripts/check.mjs",
+    "manifest": "node scripts/manifest-check.mjs",
+    "smoke": "node scripts/smoke-host.mjs",
+    "smoke:client": "node scripts/smoke-client.mjs",
+    "test": "npm run check && npm run manifest && npm run smoke && npm run smoke:client"
+  }
+}
