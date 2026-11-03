@@ -1144,7 +1144,7 @@
   function buildHwTable() {
     const body = $('#hwBody');
     const colgroup = document.createElement('colgroup');
-    [64, 0, 108, 132, 56, 58, 70].forEach((w) => {
+    [64, 0, 140, 132, 56, 58, 70].forEach((w) => {
       const c = document.createElement('col');
       if (w) c.style.width = w + 'px';
       colgroup.appendChild(c);
