@@ -147,6 +147,12 @@
           <tbody id="hwBody"></tbody>
         </table>
       </div>
+      <div class="io-strip" id="ioStrip">
+        <div class="io-cell"><span>DISK READ</span><b id="ioDiskRead">—</b></div>
+        <div class="io-cell"><span>DISK WRITE</span><b id="ioDiskWrite">—</b></div>
+        <div class="io-cell"><span>NET PEAK</span><b id="ioNetPeak">—</b></div>
+        <div class="io-cell"><span>NET MAX</span><b id="ioNetLink">—</b></div>
+      </div>
       <div class="hw-note" id="hwNote">温度/功率：GPU/VRAM 使用 nvidia-smi 包级读数（*）；无本机传感器时显示 N/A，不伪造。</div>
       <div class="hw-paper hidden" id="hwPaper">
         <div class="paper-kpis">
@@ -199,6 +205,11 @@
     </section>
   </section>
 </main>
+
+<div class="bench-toast hidden" id="benchToast">
+  <b>HARDWARE BENCH</b>
+  <span id="benchToastBody">首次加载测量中…</span>
+</div>
 
 <footer class="footer">
   <div class="foot-time"><span id="footDate">----/--/--</span><b id="footClock">--:--:--</b></div>

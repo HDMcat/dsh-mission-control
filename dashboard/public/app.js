@@ -510,7 +510,7 @@
     const box = $('#workers');
     const procs = (s.system?.procs || []).filter((p) => p && p.pid);
     const wanted = procs.filter((p) => ['python', 'pythonw', 'node'].includes(p.name));
-    const list = (wanted.length ? wanted : procs).slice(0, 4);
+    const list = (wanted.length ? wanted : procs).slice(0, 5);
     $('#workersCount').textContent = String(wanted.length || procs.length);
     if (!list.length) {
       box.innerHTML = '<div class="wc-empty">无活跃计算进程</div>';
@@ -546,6 +546,62 @@
     if (net) tips.push(`${net.name}: 下行 ${fmtBytes(net.rx)}/s · 上行 ${fmtBytes(net.tx)}/s`);
     if (e) tips.push(`E: 已用 ${e.pct}% · 剩余 ${fmtBytes(e.free)}`);
     el.title = tips.join(' | ');
+  }
+
+  function renderIoStrip(s) {
+    const b = state.bench || {};
+    const net = s?.system?.net || {};
+    const diskRead = Number.isFinite(Number(b.diskReadMBs)) ? `${Math.round(b.diskReadMBs)} MB/s` : 'BENCH…';
+    const diskWrite = Number.isFinite(Number(b.diskWriteMBs)) ? `${Math.round(b.diskWriteMBs)} MB/s` : 'BENCH…';
+    const peak = Number.isFinite(Number(net.peakMbps)) ? `${Math.round(net.peakMbps)} Mbps`
+      : Number.isFinite(Number(b.net?.peakMbps)) ? `${Math.round(b.net.peakMbps)} Mbps` : '—';
+    const link = Number.isFinite(Number(net.linkMbps)) ? `${Math.round(net.linkMbps)} Mbps`
+      : Number.isFinite(Number(b.net?.linkMbps)) ? `${Math.round(b.net.linkMbps)} Mbps` : 'N/A';
+    const set = (id, v) => { const el = $('#' + id); if (el) el.textContent = v; };
+    set('ioDiskRead', diskRead);
+    set('ioDiskWrite', diskWrite);
+    set('ioNetPeak', peak);
+    set('ioNetLink', link);
+    const tip = (id, v) => { const el = $('#' + id); if (el) el.title = v; };
+    tip('ioDiskRead', `首次加载顺序读：${diskRead}`);
+    tip('ioDiskWrite', `首次加载顺序写 + fsync：${diskWrite}`);
+    tip('ioNetPeak', `SSE 采样期间观测到的最高吞吐：${peak}`);
+    tip('ioNetLink', net.linkLabel || b.net?.linkLabel || '链路协商速率');
+  }
+
+  function showBenchToast(b) {
+    const el = $('#benchToast');
+    if (!el) return;
+    const cpu = Number.isFinite(Number(b.cpuMops)) ? `${Math.round(b.cpuMops)} Mops/s` : 'N/A';
+    const mem = Number.isFinite(Number(b.memGBs)) ? `${b.memGBs} GB/s` : 'N/A';
+    const dr = Number.isFinite(Number(b.diskReadMBs)) ? `${Math.round(b.diskReadMBs)} MB/s` : 'N/A';
+    const dw = Number.isFinite(Number(b.diskWriteMBs)) ? `${Math.round(b.diskWriteMBs)} MB/s` : 'N/A';
+    const link = Number.isFinite(Number(b.net?.linkMbps)) ? `${Math.round(b.net.linkMbps)} Mbps` : 'N/A';
+    $('#benchToastBody').textContent = `CPU ${cpu} · MEM ${mem} · DISK R ${dr} / W ${dw} · NET ${link}`;
+    el.classList.remove('hidden');
+    el.classList.add('show');
+    clearTimeout(showBenchToast._t);
+    showBenchToast._t = setTimeout(() => el.classList.remove('show'), 8000);
+  }
+
+  async function loadBench() {
+    try {
+      const r = await fetch('/api/benchmark', { cache: 'no-store' });
+      if (!r.ok) throw new Error('bench HTTP ' + r.status);
+      const b = await r.json();
+      if (!b.ok) throw new Error(b.error || 'bench failed');
+      state.bench = b;
+      renderIoStrip(state);
+      let seen = false;
+      try { seen = !!localStorage.getItem('mcBenchV1'); } catch { /* ignore */ }
+      if (!seen) {
+        showBenchToast(b);
+        try { localStorage.setItem('mcBenchV1', JSON.stringify({ at: b.at, cpuMops: b.cpuMops })); } catch { /* ignore */ }
+      }
+    } catch (err) {
+      console.warn('[bench]', err);
+      renderIoStrip(state);
+    }
   }
 
   /* ============================================================
@@ -1557,6 +1613,7 @@
     renderFeed(s);
     renderWorkspace(s);
     renderHw(s);
+    renderIoStrip(s);
     drawChart(s);
     updateFooter(s);
     setConn(true);
@@ -1965,6 +2022,7 @@
     bindAppControls();
     bindSettings();
     bindFolderWindow();
+    loadBench();
     renderThemeGroups();
     renderRootLabels();
     initTimelineScroll();

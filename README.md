@@ -92,7 +92,7 @@ Full-window contents:
 
 - TASK BAR: DSH workflow, session picker, context/token pressure;
 - FILESYSTEM RADAR + git + live change feed;
-- full HARDWARE matrix (all fixed disks) with explicit N/A sensor fields;
+- full HARDWARE matrix (all fixed disks) with explicit N/A sensor fields;\n- one-time first-load hardware benchmark (CPU / memory / sequential disk R/W / NIC link) and a persistent DISK READ / WRITE + NET PEAK / MAX strip;
 - PROJECT FOLDER window with true folder/file listing and one-click open;
 - 21 themes and directory settings;
 - standalone fullscreen window launched by the Host (Chrome/Edge app mode);

@@ -50,6 +50,110 @@ const num = (v) => (Number.isFinite(v) ? v : 0);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 /* ================================================================== */
+/*  ONE-TIME HARDWARE BENCHMARK                                        */
+/* ================================================================== */
+let BENCH_RESULT = null;
+let BENCH_PROMISE = null;
+
+function speedToMbps(value) {
+  const m = String(value || '').match(/([\d.]+)\s*(Gbps|Mbps|Kbps)/i);
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n)) return null;
+  if (m[2].toLowerCase() === 'gbps') return Math.round(n * 1000);
+  if (m[2].toLowerCase() === 'kbps') return +(n / 1000).toFixed(1);
+  return Math.round(n);
+}
+
+function readLinkCapacity() {
+  try {
+    const out = execFileSync('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      "$a=Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Sort-Object LinkSpeed -Descending | Select-Object -First 1 Name,LinkSpeed,InterfaceDescription; $a | ConvertTo-Json -Compress",
+    ], { timeout: 8000, windowsHide: true, encoding: 'utf8' });
+    const data = JSON.parse(String(out || '{}'));
+    return {
+      name: data.Name || data.InterfaceDescription || 'adapter',
+      linkMbps: speedToMbps(data.LinkSpeed),
+      linkLabel: data.LinkSpeed || null,
+    };
+  } catch {
+    return { name: null, linkMbps: null, linkLabel: null };
+  }
+}
+
+async function runBenchmark() {
+  const result = {
+    at: new Date().toISOString(),
+    cpuMops: null,
+    memGBs: null,
+    diskReadMBs: null,
+    diskWriteMBs: null,
+    net: readLinkCapacity(),
+    diskPath: null,
+  };
+
+  // CPU: 4M integer ops, single thread.
+  try {
+    const n = 4_000_000;
+    const t0 = process.hrtime.bigint();
+    let x = 1;
+    for (let i = 0; i < n; i++) x = (x * 1664525 + 1013904223) >>> 0;
+    const sec = Number(process.hrtime.bigint() - t0) / 1e9;
+    result.cpuMops = +(n / sec / 1e6).toFixed(1);
+    result.cpuProbe = x;
+  } catch { /* ignore */ }
+
+  // Memory: 64 MiB copy.
+  try {
+    const size = 64 * 1024 * 1024;
+    const src = Buffer.alloc(size, 0xa5);
+    const dst = Buffer.alloc(size);
+    const t0 = process.hrtime.bigint();
+    dst.set(src);
+    const sec = Number(process.hrtime.bigint() - t0) / 1e9;
+    result.memGBs = +((size / 1e9) / sec).toFixed(2);
+  } catch { /* ignore */ }
+
+  // Disk: 32 MiB sequential write+fsync, then read.
+  const tmp = path.join(STATE_DIR, `mc-bench-${process.pid}.tmp`);
+  result.diskPath = tmp;
+  try {
+    const size = 32 * 1024 * 1024;
+    const buf = Buffer.alloc(size, 0x5a);
+    const fd = fs.openSync(tmp, 'w');
+    const tw0 = process.hrtime.bigint();
+    fs.writeSync(fd, buf, 0, size, 0);
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    const tw = Number(process.hrtime.bigint() - tw0) / 1e9;
+    result.diskWriteMBs = +((size / 1e6) / tw).toFixed(0);
+    const tr0 = process.hrtime.bigint();
+    const read = fs.readFileSync(tmp);
+    const tr = Number(process.hrtime.bigint() - tr0) / 1e9;
+    result.diskReadMBs = +((read.length / 1e6) / tr).toFixed(0);
+  } catch (error) {
+    result.diskError = String(error?.message || error).slice(0, 200);
+  } finally {
+    try { fs.unlinkSync(tmp); } catch { /* ignore */ }
+  }
+
+  result.net.peakMbps = null;
+  return result;
+}
+
+function benchmarkSnapshot() {
+  if (BENCH_RESULT) return BENCH_RESULT;
+  if (!BENCH_PROMISE) {
+    BENCH_PROMISE = runBenchmark()
+      .then((r) => { BENCH_RESULT = r; return r; })
+      .finally(() => { BENCH_PROMISE = null; });
+  }
+  return BENCH_PROMISE;
+}
+
+
+/* ================================================================== */
 /*  SYSTEM TELEMETRY                                                   */
 /* ================================================================== */
 class SystemTelemetry {
@@ -58,7 +162,8 @@ class SystemTelemetry {
     this.mem = { total: os.totalmem(), used: 0, pct: 0 };
     this.gpu = null; this.gpuHistory = [];
     this.procs = []; this.prevProc = new Map(); this.procBusy = false;
-    this.net = null; this.netPrev = new Map();
+    this.net = null; this.netPrev = new Map(); this.netPeakMbps = 0;
+    this.netLinkMbps = null; this.netLinkName = null; this.netLinkBusy = false;
     this.disk = { total: 0, free: 0, used: 0, pct: 0 };
     this.disks = {};
     this.lastCpuSample = this.cpuTimes();
@@ -66,6 +171,7 @@ class SystemTelemetry {
     this.lastCpuAt = Date.now();
     this.emaCpu = 0;
     this.readDisk();
+    this.readNetLink();
   }
   cpuTimes() {
     let idle = 0, total = 0;
@@ -75,6 +181,17 @@ class SystemTelemetry {
       total += t.user + t.nice + t.sys + t.idle + t.irq;
     }
     return { idle, total };
+  }
+  readNetLink() {
+    if (this.netLinkBusy) return;
+    this.netLinkBusy = true;
+    try {
+      const info = readLinkCapacity();
+      this.netLinkMbps = info.linkMbps;
+      this.netLinkName = info.name;
+      this.netLinkLabel = info.linkLabel;
+    } catch { /* keep null */ }
+    this.netLinkBusy = false;
   }
   sampleCpu() {
     const cpus = os.cpus();
@@ -251,7 +368,18 @@ class SystemTelemetry {
           }
           this.netPrev.set(n.Name, { rx: num(n.ReceivedBytes), tx: num(n.SentBytes), at: now });
         }
-        if (best) this.net = best;
+        if (best) {
+          const peakMbps = (best.rx + best.tx) * 8 / 1e6;
+          this.netPeakMbps = Math.max(this.netPeakMbps || 0, peakMbps);
+          this.net = {
+            name: best.name,
+            rx: best.rx,
+            tx: best.tx,
+            peakMbps: +this.netPeakMbps.toFixed(1),
+            linkMbps: this.netLinkMbps,
+            linkLabel: this.netLinkLabel || null,
+          };
+        }
       });
   }
   displayCpu() {
@@ -1423,6 +1551,14 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/balance') {
     const data = await balanceSnapshot();
     return sendJson(res, data.ok ? 200 : 200, data);
+  }
+  if (p === '/api/benchmark') {
+    try {
+      const data = await benchmarkSnapshot();
+      return sendJson(res, 200, { ok: true, ...data });
+    } catch (error) {
+      return sendJson(res, 500, { ok: false, error: String(error?.message || error).slice(0, 300) });
+    }
   }
   if (p === '/api/folders') {
     const rel = url.searchParams.get('path') || '';
