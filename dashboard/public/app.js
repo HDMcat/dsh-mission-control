@@ -1260,8 +1260,8 @@
         : ['IDLE', C.ink4];
       updateHwRow(key, 'NVMe SSD · ' + drive, readPct, `${fmtBytes(dd.free)} free / ${fmtBytes(dd.total)}`,
         'N/A', 'N/A', stateOverride);
-      hwRefs[key].pct.textContent = `${readPct.toFixed(0)}% · ${peakBps ? 'MAX ' + rateShort(peakBps) + '/s' : 'MAX N/A'}`;
-      hwRefs[key].pct.title = `实时读取 ${readTxt} / 观测 MAX ${maxTxt}`;
+      hwRefs[key].pct.textContent = `${readBps > 0 ? rateShort(readBps) + '/s' : '0 B/s'}`;
+      hwRefs[key].pct.title = `实时读取 ${readTxt} / 观测 MAX ${maxTxt} · 比例 ${readPct.toFixed(1)}%`;
       hwRefs[key].val.title = `已用 ${dd.pct}% · 可用 ${fmtBytes(dd.free)} / 总 ${fmtBytes(dd.total)} · 读取 ${readTxt} / MAX ${maxTxt}`;
       hwRefs[key].temp.title = '本机磁盘未暴露温度传感器（StorageReliabilityCounter 不可访问）';
       hwRefs[key].power.title = '本机磁盘未暴露功率传感器';

@@ -166,7 +166,7 @@ class SystemTelemetry {
     this.netLinkMbps = null; this.netLinkName = null; this.netLinkBusy = false;
     this.disk = { total: 0, free: 0, used: 0, pct: 0 };
     this.disks = {};
-    this.diskIo = {}; this.diskIoPeak = {}; this.diskIoBusy = false; this.lastDiskIoAt = 0;
+    this.diskIo = {}; this.diskIoPeak = {}; this.diskIoPrev = {}; this.diskIoBusy = false; this.lastDiskIoAt = 0;
     this.lastCpuSample = this.cpuTimes();
     this.lastCoreTimes = os.cpus().map((c) => ({ ...c.times }));
     this.lastCpuAt = Date.now();
@@ -266,8 +266,8 @@ class SystemTelemetry {
     this.lastDiskIoAt = Date.now();
     const ps = [
       '$OutputEncoding=[Console]::OutputEncoding=[Text.Encoding]::UTF8;',
-      'Get-CimInstance Win32_PerfFormattedData_PerfDisk_LogicalDisk |',
-      'Select-Object Name,DiskReadBytesPerSec,DiskWriteBytesPerSec | ConvertTo-Json -Compress',
+      'Get-CimInstance Win32_PerfRawData_PerfDisk_LogicalDisk |',
+      'Select-Object Name,Timestamp_PerfTime,Frequency_PerfTime,DiskReadBytesPersec,DiskWriteBytesPersec | ConvertTo-Json -Compress',
     ].join(' ');
     execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps],
       { timeout: 7000, windowsHide: true, encoding: 'utf8' }, (err, stdout) => {
@@ -279,8 +279,17 @@ class SystemTelemetry {
           for (const row of rows) {
             const name = String(row?.Name || '').toUpperCase();
             if (!/^[A-Z]:$/.test(name)) continue;
-            const readBps = Math.max(0, num(Number(row.DiskReadBytesPerSec)));
-            const writeBps = Math.max(0, num(Number(row.DiskWriteBytesPerSec)));
+            const t = Number(row.Timestamp_PerfTime);
+            const freq = Number(row.Frequency_PerfTime) || 1e7;
+            const readTotal = Math.max(0, Number(row.DiskReadBytesPersec) || 0);
+            const writeTotal = Math.max(0, Number(row.DiskWriteBytesPersec) || 0);
+            const prev = this.diskIoPrev[name];
+            this.diskIoPrev[name] = { t, readTotal, writeTotal };
+            if (!prev || !Number.isFinite(t) || t <= prev.t) continue;
+            const seconds = (t - prev.t) / freq;
+            if (!(seconds > 0.2 && seconds < 30)) continue;
+            const readBps = Math.max(0, (readTotal - prev.readTotal) / seconds);
+            const writeBps = Math.max(0, (writeTotal - prev.writeTotal) / seconds);
             this.diskIo[name] = { readBps, writeBps, at: Date.now() };
             this.diskIoPeak[name] = Math.max(this.diskIoPeak[name] || 0, readBps);
           }
