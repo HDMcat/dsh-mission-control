@@ -82,6 +82,11 @@
       { id: 'cyber-violet', name: '电光青紫', mode: 'dark', paper: '#090D16', panel: '#111827', accent: '#00E5FF', blue: '#7A5CFF', ochre: '#FF4FD8' },
       { id: 'cyber-acid', name: '酸性黄绿', mode: 'dark', paper: '#0A0F0A', panel: '#121A10', accent: '#C6FF00', blue: '#00E5FF', ochre: '#FF9F1C' },
     ] },
+    { id: 'nature', name: '自然', themes: [
+      { id: 'nature-mist', name: '晨雾青', mode: 'light', paper: '#E8F0EC', panel: '#F5FAF6', accent: '#5B8C7A', blue: '#3B6B7A', ochre: '#B08A55' },
+      { id: 'nature-moss', name: '苔原绿', mode: 'light', paper: '#E9EFE2', panel: '#F6FAF0', accent: '#6F8B4A', blue: '#3D5F6B', ochre: '#B08A55' },
+      { id: 'nature-dusk', name: '暮山紫', mode: 'light', paper: '#ECE9F2', panel: '#F7F4FB', accent: '#7A6A9E', blue: '#4A5A7A', ochre: '#B08A55' },
+    ] },
   ];
   const THEMES = THEME_GROUPS.flatMap((g) => g.themes.map((t) => buildTheme(g, t)));
   let activeTheme = DEFAULT_THEME;
