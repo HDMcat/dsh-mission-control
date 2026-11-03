@@ -22,6 +22,19 @@ provider and are used with permission for this project.*
 
 *Synthetic, clearly-labelled demo mode (`DEMO`); no real paths, session data, or user identity.*
 
+## Showcase / 宣传片
+
+![Mission Control HUD](docs/showcase/overview.jpg)
+
+- [Showcase page](docs/index.html) — 2560×1600 screenshots, install, privacy, agent prompt.
+- [Promo package](docs/PROMO.md) — 65 s / 2560×1600 video facts, voice/music provenance.
+- [Agent install prompt](docs/AGENT-INSTALL-PROMPT.md) — let another DeepSeek inspect and install.
+- Bilibili video: **to be published**; the release asset will be linked here after upload. No BV number is claimed yet.
+
+The promo screenshots are actual HUD frames at 2560×1600, redacted in the DOM
+(DEMO session, demo paths, generic folder names). The full local HUD still shows
+real session content at runtime; do not screen-share it without checking.
+
 ## What it does
 
 - Four live metrics: **CPU / MEMORY / GPU / DISK**.

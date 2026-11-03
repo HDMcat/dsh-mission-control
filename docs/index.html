@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH Mission Control · 国风开源性能面板</title>
+<meta name="description" content="Mission Control：DeepSeek Harness 的本机优先性能面板。真实硬件、任务条、工程文件追踪，loopback only，MIT 开源。">
+<meta property="og:title" content="DSH Mission Control · 国风开源性能面板">
+<meta property="og:description" content="把算力写进一页宣纸。真实硬件、任务条、工程文件追踪，loopback only。">
+<meta property="og:image" content="showcase/og.jpg">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --paper:#f7f1e5; --paper2:#fffaf0; --ink:#1c2a35; --ink2:#45535c;
+  --muted:#7b7468; --line:#d9cbb6; --cinnabar:#b43a2b; --ochre:#a06a42;
+  --indigo:#2e4c66; --celadon:#6e8b74;
+  --serif:"Songti SC","Noto Serif SC","STSong","SimSun",Georgia,serif;
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --mono:"Cascadia Mono","SFMono-Regular",Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:#e9dfcf}
+body{margin:0;background:
+  radial-gradient(1200px 700px at 20% 0%,#fffaf0 0,transparent 65%),
+  radial-gradient(900px 500px at 90% 10%,rgba(46,76,102,.10),transparent 60%),
+  var(--paper);
+  color:var(--ink);font-family:var(--sans);line-height:1.65}
+a{color:var(--cinnabar);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+header{padding:26px 0;border-bottom:1px solid rgba(28,42,53,.14);background:rgba(247,241,229,.78);backdrop-filter:blur(12px);position:sticky;top:0;z-index:20}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-weight:700;letter-spacing:2px}
+.brand img{width:38px;height:38px;border-radius:50%;background:#fffaf0;border:1px solid rgba(180,58,43,.45)}
+.nav-links{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}
+.hero{padding:72px 0 42px;display:grid;grid-template-columns:1.08fr .92fr;gap:42px;align-items:center}
+.kicker{font:11px/1.4 var(--mono);letter-spacing:3px;color:var(--ochre);text-transform:uppercase}
+h1{font:700 clamp(38px,5.2vw,76px)/1.12 var(--serif);letter-spacing:2px;margin:14px 0 18px}
+h1 em{font-style:normal;color:var(--cinnabar)}
+.lede{font-size:17px;color:var(--ink2);max-width:680px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(28,42,53,.28);padding:11px 18px;border-radius:3px;font-size:14px;color:var(--ink);background:var(--paper2)}
+.btn.primary{background:var(--ink);color:#f7f1e5;border-color:var(--ink)}
+.btn:hover{text-decoration:none;transform:translateY(-1px)}
+.hero-card{position:relative;padding:14px;background:linear-gradient(150deg,#fffaf0,#eadccc);border:1px solid rgba(28,42,53,.22);box-shadow:0 28px 70px -34px rgba(28,42,53,.55)}
+.hero-card img{width:100%;display:block;border-radius:2px}
+.hero-card:after{content:"MISSION CONTROL";position:absolute;right:18px;bottom:12px;font:9px var(--mono);letter-spacing:2px;color:rgba(28,42,53,.55)}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:22px 0}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:34px 0 22px}
+.card{background:rgba(255,250,240,.78);border:1px solid rgba(28,42,53,.14);padding:22px;border-radius:4px}
+.card .tag{font:10px var(--mono);letter-spacing:2px;color:var(--cinnabar)}
+.card h3{font-family:var(--serif);font-size:24px;margin:8px 0 8px;letter-spacing:1px}
+.card p{font-size:14px;color:var(--ink2);margin:0}
+.gallery{padding:34px 0 18px}
+.section-title{font-family:var(--serif);font-size:38px;letter-spacing:1.5px;margin:0 0 6px}
+.section-sub{color:var(--muted);font-size:14px;margin:0 0 20px}
+.shots{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+.shot{background:#fffaf0;padding:10px;border:1px solid rgba(28,42,53,.16);box-shadow:0 18px 40px -30px rgba(28,42,53,.45)}
+.shot img{width:100%;display:block}
+.shot .cap{font:10px var(--mono);letter-spacing:1.5px;color:var(--muted);padding:8px 2px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:34px 0}
+.panel{background:rgba(255,250,240,.8);border:1px solid rgba(28,42,53,.16);padding:24px;border-radius:4px}
+.panel h3{font-family:var(--serif);font-size:25px;margin:0 0 12px}
+.panel p,.panel li{color:var(--ink2);font-size:14px}
+code,pre{font-family:var(--mono)}
+pre{background:#1c2a35;color:#f7f1e5;padding:16px;border-radius:4px;overflow:auto;font-size:12.5px;line-height:1.7}
+.pill{display:inline-block;border:1px solid rgba(28,42,53,.2);padding:3px 8px;border-radius:99px;font:10px var(--mono);letter-spacing:1px;color:var(--ink2);margin:2px 4px 2px 0}
+.cta{padding:52px 0 68px;text-align:center}
+.cta h2{font-family:var(--serif);font-size:clamp(30px,4vw,54px);margin:0 0 10px}
+.cta p{color:var(--muted);margin:0 0 22px}
+footer{border-top:1px solid rgba(28,42,53,.14);padding:26px 0;color:var(--muted);font-size:12px}
+.muted{color:var(--muted)}
+.copy{font:11px var(--mono);background:transparent;border:1px solid rgba(28,42,53,.25);color:var(--ink2);padding:6px 10px;border-radius:3px;cursor:pointer;margin-bottom:10px}
+.copy:hover{border-color:var(--cinnabar);color:var(--cinnabar)}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.shots{grid-template-columns:1fr}.split{grid-template-columns:1fr}h1{font-size:44px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <a class="brand" href="https://github.com/HDMcat/dsh-mission-control"><img src="../icon.png" alt="">DSH MISSION CONTROL</a>
+  <nav class="nav-links">
+    <a href="#features">Features</a><a href="#gallery">Screens</a><a href="#install">Install</a><a href="#agent">Agent prompt</a>
+    <a href="https://github.com/HDMcat/dsh-mission-control">GitHub ↗</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">DSH · LOCAL-FIRST · OPEN SOURCE</div>
+    <h1>把算力<br>写进一页<em>宣纸</em></h1>
+    <p class="lede">Mission Control 是 DeepSeek Harness 的本机性能面板：真实硬件、任务条、工程文件追踪，放在同一张纸墨长卷里。loopback only，不上传，MIT 开源。</p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/HDMcat/dsh-mission-control">GitHub 仓库 ↗</a>
+      <a class="btn" href="https://github.com/HDMcat/dsh-mission-control/releases">下载 Release</a>
+      <a class="btn" href="https://github.com/HDMcat/dsh-mission-control/blob/main/README.md">安装文档</a>
+    </div>
+    <div style="margin-top:18px">
+      <span class="pill">MIT</span><span class="pill">loopback only</span><span class="pill">no telemetry upload</span><span class="pill">DSH plugin</span>
+    </div>
+  </div>
+  <div class="hero-card"><img src="showcase/overview.jpg" alt="Mission Control HUD overview"><div class="muted" style="font-size:11px;margin-top:8px">Synthetic demo screenshot · sanitized</div></div>
+</section>
+
+<div class="rule"></div>
+
+<section id="features" class="cards">
+  <div class="card"><div class="tag">01 / SILICON</div><h3>硬件状态</h3><p>GPU / VRAM / CPU / RAM 四表盘，HARDWARE 表枚举 C–H 全部固定磁盘。传感器不存在就显示 N/A，不伪造读数。</p></div>
+  <div class="card"><div class="tag">02 / WORKFLOW</div><h3>任务条</h3><p>TASK BAR 把工具调用、上下文压力、文件产出放到同一条时间轴；不是日志堆叠，是可回看的因果链。</p></div>
+  <div class="card"><div class="tag">03 / FILES</div><h3>工程文件</h3><p>PROJECT FOLDER 同时列出目录和文件，显示大小；单击文件用默认程序打开，↗ 在资源管理器中定位。</p></div>
+</section>
+
+<section id="gallery" class="gallery">
+  <h2 class="section-title">真实的界面，不是概念图</h2>
+  <p class="section-sub">2560×1600 实拍 · DOM 脱敏 · 无真实会话/路径</p>
+  <div class="shots">
+    <div class="shot"><img src="showcase/overview.jpg" alt="2560x1600 full HUD"><div class="cap">FULL HUD · 0.618 / 0.382 · TASK BAR + RADAR + HARDWARE + PROJECT FOLDER</div></div>
+    <div class="shot"><img src="showcase/hardware.jpg" alt="hardware status"><div class="cap">HARDWARE · GPU / VRAM / CPU / RAM · C–H · N/A honesty</div></div>
+    <div class="shot"><img src="showcase/files.jpg" alt="project folder files"><div class="cap">PROJECT FOLDER · directories + files + sizes + click to open</div></div>
+    <div class="shot"><img src="showcase/title.jpg" alt="DSH Mission Control title card"><div class="cap">GUIZHENG / PAPER / CINNABAR · 2560 × 1600</div></div>
+  </div>
+</section>
+
+<section id="install" class="split">
+  <div class="panel">
+    <h3>安装 / Install</h3>
+    <p>需要 Node.js 20+，无 npm 运行时依赖。完整步骤以仓库 README 为准。</p>
+    <pre>git clone https://github.com/HDMcat/dsh-mission-control.git
+cd dsh-mission-control
+npm start        # synthetic demo, http://127.0.0.1:7799/</pre>
+    <p>在 DSH：Plugins → Add plugin → Install a third-party plugin，选择本仓库目录，Enable now。FULL 会打开独立全屏 HUD。</p>
+  </div>
+  <div class="panel">
+    <h3>隐私边界 / Privacy</h3>
+    <ul>
+      <li>loopback only：<code>127.0.0.1:7799</code> / <code>7800</code></li>
+      <li>压缩面板不上传会话、命令、路径或凭据</li>
+      <li>完整 HUD 的会话内容只在本机渲染</li>
+      <li>进程控制默认关闭；文件监视需显式配置</li>
+      <li>不能读取的传感器显示 <code>N/A</code>，不编数字</li>
+    </ul>
+  </div>
+</section>
+
+<section id="agent" class="panel" style="margin-bottom:34px">
+  <h3>让你的 DeepSeek 先审一遍</h3>
+  <p>把下面这段直接交给另一个 DSH/DeepSeek Agent。它会先读代码与边界，再决定是否安装；不会碰其他模块。</p>
+  <button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('prompt').innerText);this.textContent='已复制'">Copy agent prompt</button>
+<pre id="prompt">你是一名 DSH 插件审查/安装 Agent。请评估并可选安装开源插件：
+https://github.com/HDMcat/dsh-mission-control
+
+步骤：
+1. 读取 README.md、docs/DSH-PLUGIN.md、docs/SANITIZATION.md、NOTICE。
+2. 检查 Node.js >= 20、DSH 版本、目标 profile；不要修改无关模块。
+3. 先在测试 profile / 独立端口验证：npm test、npm start、/api/health、/api/snapshot。
+4. 只有在确认 127.0.0.1:7799/项目监听、无远程写接口、进程控制默认关闭后，才用 plugin_manager install_bundle 安装。
+5. 安装后验证 MC / FULL、HUD 截图、/api/health 200；记录版本与 commit。
+6. 输出：是否安装、证据（命令/端口/截图）、隐私边界、发现的问题。不要声称未验证的 Q1/性能结论。</pre>
+</section>
+
+<div class="rule"></div>
+<section class="cta">
+  <h2>给你的 DeepSeek<br>一张自己的工程长卷</h2>
+  <p>MIT · loopback only · DSH plugin · 国风纸墨</p>
+  <a class="btn primary" href="https://github.com/HDMcat/dsh-mission-control">打开 GitHub ↗</a>
+</section>
+</main>
+<footer><div class="wrap">DSH Mission Control · 2026 · <a href="https://github.com/HDMcat/dsh-mission-control">HDMcat/dsh-mission-control</a> · Screenshots sanitized; no live session content.</div></footer>
+</body>
+</html>
