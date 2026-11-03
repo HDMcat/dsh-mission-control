@@ -4,17 +4,24 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [20, 22]
+        # macOS hosted runners were repeatedly failing acquisition; add it
+        # back when GitHub hosted capacity is stable. Linux + Windows cover
+        # the platform-specific host collectors today.
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
       - name: Checks
