@@ -10,11 +10,11 @@ credential, command-line, or remote write endpoint in the compact surface.
 
 *The soldering-cat identity: user-provided artwork, cropped to a transparent PNG.
 It is the plugin icon and the full-HUD logo. The owner has confirmed redistribution
-permission for this project; see [`NOTICE`](NOTICE). Artwork rights
-remain with the provider; confirm redistribution before publishing.*
+permission for this project; see [`NOTICE`](NOTICE). Artwork rights remain with the
+provider and are used with permission for this project.*
 
-> Status: **0.5.0 / cat identity + standalone fullscreen**. Compact panel, one-click
-> summon, and the full HUD in a separate fullscreen browser window are implemented.
+> Status: **0.5.0 / cat identity + standalone fullscreen**. Compact panel, the
+> **FULL** launcher, and the full HUD in a separate fullscreen browser window are implemented.
 > The desk pet was removed. No floating summon bar: the bottom dock keeps MC/FULL.
 > Re-test in your own DSH profile and in both light/dark themes before release.
 
@@ -111,8 +111,8 @@ Full access:
 3. Confirm the read-back (package name + one-liner) and **Install**.
 4. When installation finishes, choose **Enable now**. A new install can activate
    through HMR; replacing an already-installed package requires a DSH restart.
-5. Open a conversation → click **MC** for the compact right-sidebar panel, the
-   fixed bottom-right **MISSION CONTROL** button for the full window, or `Ctrl+Shift+M`.
+5. Open a conversation → click **MC** for the compact right-sidebar panel, or
+   **FULL** in the composer dock for the separate fullscreen HUD window.
 6. Verify the collector: `http://127.0.0.1:7799/api/health` and
    `http://127.0.0.1:7799/api/snapshot`.
 
